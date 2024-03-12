@@ -50,5 +50,5 @@ rule recode_pgen:
 --make-pgen \
 --out {params.prefix} \
 --threads {resources.threads} \
---memory {resources.mem_mb} 'require'
+--memory 90000 'require'
   """
