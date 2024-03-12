@@ -36,7 +36,7 @@ rule recode_pgen:
     container:
         "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
     resources:
-        runtime=lambda wc, attempt: attempt * 10,
+        runtime=lambda wc, attempt: attempt * 30,
     params:
         prefix=ws_path("pgen/impute_dedup_recoded_{chrom}"),
         fasta=config.get("fasta_path"),
