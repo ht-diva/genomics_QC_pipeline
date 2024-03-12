@@ -45,7 +45,7 @@ rule recode_pgen:
         """plink2 \
 --pfile {params.pfile} \
 --recode A --set-all-var-ids '@:#:$r:$a' \
---new-id-max-allele-len 404 \
+--new-id-max-allele-len 1000 \
 --ref-from-fa --fa {params.fasta} \
 --make-pgen \
 --out {params.prefix} \
