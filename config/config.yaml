@@ -1,0 +1,5 @@
+# paths
+workspace_path: "results"
+pgen_path: '/processing_data/shared_datasets/plasma_proteome/interval/genotypes/imputed/pgen/'
+pgen_template: "impute_dedup_{chrom}_interval.pgen"
+fasta_path: "/exchange/healthds/public_data/reference_genomes/GRCh37/GCA_000001405.14_GRCh37.p13_full_analysis_set.fna"

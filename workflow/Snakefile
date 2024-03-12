@@ -1,0 +1,54 @@
+from snakemake.utils import min_version
+from pathlib import Path
+
+##### set minimum snakemake version #####
+min_version("8.4.1")
+
+
+configfile: "config/config.yaml"
+
+
+def get_pgen(stem=False):
+    if stem:
+        return str(
+            Path(config.get("pgen_path"), Path(config.get("pgen_template")).stem)
+        )
+    return str(Path(config.get("pgen_path"), config.get("pgen_template")))
+
+
+def ws_path(file_path):
+    return str(Path(config.get("workspace_path"), file_path))
+
+
+rule all:
+    input:
+        expand(
+            ws_path("pgen/impute_dedup_recoded_{chrom}.pgen"),
+            chrom=[i for i in range(1, 2)],
+        ),
+
+
+rule recode_pgen:
+    input:
+        get_pgen(),
+    output:
+        ws_path("pgen/impute_dedup_recoded_{chrom}.pgen"),
+    container:
+        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
+    resources:
+        runtime=lambda wc, attempt: attempt * 10,
+    params:
+        prefix=ws_path("pgen/impute_dedup_recoded_{chrom}"),
+        fasta=config.get("fasta_path"),
+        pfile=get_pgen(stem=True),
+    shell:
+        """plink2 \
+--pfile {params.pfile} \
+--recode A --set-all-var-ids '@:#:$r:$a' \
+--new-id-max-allele-len 404 \
+--ref-from-fa --fa {params.fasta} \
+--make-pgen \
+--out {params.prefix} \
+--threads {resources.threads} \
+--memory {resources.mem_mb} 'require'
+  """
