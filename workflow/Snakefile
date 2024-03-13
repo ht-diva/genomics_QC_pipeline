@@ -11,19 +11,22 @@ configfile: "config/config.yaml"
 def get_pgen(stem=False):
     if stem:
         return str(
-            Path(config.get("pgen_path"), Path(config.get("pgen_template")).stem)
+            Path(config.get("pgen_src_path"), Path(config.get("pgen_template")).stem)
         )
-    return str(Path(config.get("pgen_path"), config.get("pgen_template")))
+    return str(Path(config.get("pgen_src_path"), config.get("pgen_template")))
 
 
 def ws_path(file_path):
-    return str(Path(config.get("workspace_path"), file_path))
+    return str(Path(config.get("workspace_path"),file_path))
+
+def dest_path(file_path):
+    return str(Path(config.get("pgen_dest_path"),file_path))
 
 
 rule all:
     input:
         expand(
-            ws_path("pgen/impute_dedup_recoded_{chrom}.pgen"),
+            dest_path("pgen/impute_dedup_recoded_{chrom}.pgen"),
             chrom=[i for i in range(1, 23)],
         ),
 
@@ -36,9 +39,9 @@ rule recode_pgen:
     container:
         "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
     resources:
-        runtime=lambda wc, attempt: attempt * 30,
+        runtime=lambda wc, attempt: attempt * 60,
     params:
-        prefix=ws_path("pgen/impute_dedup_recoded_{chrom}"),
+        prefix = ws_path("pgen/impute_dedup_recoded_{chrom}"),
         fasta=config.get("fasta_path"),
         pfile=get_pgen(stem=True),
     shell:
@@ -51,4 +54,41 @@ rule recode_pgen:
 --out {params.prefix} \
 --threads {resources.threads} \
 --memory 90000 'require'
-  """
+"""
+
+rule header_info:
+    input:
+        pgen=ws_path("pgen/impute_dedup_recoded_{chrom}.pgen"),
+    output:
+        info=ws_path("pgen/impute_dedup_recoded_{chrom}.info"),
+    container:
+        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
+    resources:
+        runtime = lambda wc, attempt: attempt * 10,
+    shell:
+        """plink2 \
+--pfile {input.pgen} \
+--pgen-info \
+--threads {resources.threads} > {output.info}
+"""
+
+
+rule move_to_destination:
+    input:
+        pgen=ws_path("pgen/impute_dedup_recoded_{chrom}.pgen"),
+        pvar=ws_path("pgen/impute_dedup_recoded_{chrom}.pvar"),
+        psam=ws_path("pgen/impute_dedup_recoded_{chrom}.psam"),
+        info=ws_path("pgen/impute_dedup_recoded_{chrom}.info"),
+    output:
+        pgen = dest_path("pgen/impute_dedup_recoded_{chrom}.pgen"),
+        pvar=dest_path("pgen/impute_dedup_recoded_{chrom}.pvar"),
+        psam=dest_path("pgen/impute_dedup_recoded_{chrom}.psam"),
+        info=dest_path("pgen/impute_dedup_recoded_{chrom}.info"),
+    resources:
+        runtime = lambda wc, attempt: attempt * 120,
+    shell:
+        """
+        rsync -rlptoDvz {input.pgen} {output.pgen} && \
+        rsync -rlptoDvz {input.pvar} {output.pvar} && \
+        rsync -rlptoDvz {input.psam} {output.psam} && \
+        rsync -rlptoDvz {input.info} {output.info}"""
