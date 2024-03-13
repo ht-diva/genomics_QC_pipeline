@@ -61,13 +61,15 @@ rule header_info:
         pgen=ws_path("pgen/impute_dedup_recoded_{chrom}.pgen"),
     output:
         info=ws_path("pgen/impute_dedup_recoded_{chrom}.info"),
+    params:
+        prefix = ws_path("pgen/impute_dedup_recoded_{chrom}"),
     container:
         "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
     resources:
         runtime = lambda wc, attempt: attempt * 10,
     shell:
         """plink2 \
---pfile {input.pgen} \
+--pfile {params.prefix} \
 --pgen-info \
 --threads {resources.threads} > {output.info}
 """
