@@ -70,6 +70,8 @@ rule selected_sample:
         ws_path("pgen/impute_recoded_selected_sample_{chrom}.psam"),
     container:
         "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
+    resources:
+        runtime=lambda wc, attempt: attempt * 60,
     params:
         fam=config.get("fam_path"),
         pfile=ws_path("pgen/impute_dedup_recoded_{chrom}"),
@@ -87,7 +89,7 @@ rule selected_sample:
 """
 
 
-rule filtered_var:
+rule filter_var:
     input:
         ws_path("pgen/impute_recoded_selected_sample_{chrom}.pgen"),
         ws_path("pgen/impute_recoded_selected_sample_{chrom}.pvar"),
@@ -98,6 +100,8 @@ rule filtered_var:
         ws_path("pgen/impute_recoded_selected_sample_filtered_var_{chrom}.psam"),
     container:
         "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
+    resources:
+        runtime=lambda wc, attempt: attempt * 60,
     params:
         pfile=ws_path("pgen/impute_recoded_selected_sample_{chrom}"),
         prefix=ws_path("pgen/impute_recoded_selected_sample_filtered_var_{chrom}"),
@@ -132,6 +136,8 @@ rule create_bgen:
         ),
     container:
         "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
+    resources:
+        runtime=lambda wc, attempt: attempt * 60,
     params:
         pfile=ws_path("pgen/impute_recoded_selected_sample_filtered_var_{chrom}"),
         prefix=ws_path(
@@ -158,6 +164,8 @@ rule qctool:
         ),
     container:
         "docker://gitlab.fht.org:5050/hds-center/containers/qctools:e160ea8f"
+    resources:
+        runtime=lambda wc, attempt: attempt * 240,
     shell:
         """qctool \
     -g {input} \ 
@@ -177,8 +185,8 @@ rule get_hq_variants:
             "pgen/hq_variants_impute_recoded_selected_sample_filtered_var_chr_{chrom}.txt"
         ),
         log=ws_path("pgen/report_hq_variants_chr{chrom}.log"),
-    # resources:
-    #    runtime=lambda wc, attempt: attempt * 60,
+    resources:
+        runtime=lambda wc, attempt: attempt * 60,
     shell:
         """
         total_rows=$(grep -v ^#  {input} | wc -l) && \
@@ -195,22 +203,24 @@ rule filter_hq_variants:
         ws_path("pgen/impute_recoded_selected_sample_filtered_var_{chrom}.pgen"),
         ws_path("pgen/impute_recoded_selected_sample_filtered_var_{chrom}.pvar"),
         ws_path("pgen/impute_recoded_selected_sample_filtered_var_{chrom}.psam"),
+        ws_path(
+            "pgen/hq_variants_impute_recoded_selected_sample_filtered_var_chr_{chrom}.txt"
+        ),
     output:
         ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_{chrom}.pgen"),
         ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_{chrom}.pvar"),
         ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_{chrom}.psam"),
     container:
         "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
+    resources:
+        runtime=lambda wc, attempt: attempt * 60,
     params:
         pfile=ws_path("pgen/impute_recoded_selected_sample_filtered_var_{chrom}"),
         prefix=ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_{chrom}"),
-        snp_list=ws_path(
-            "pgen/hq_variants_impute_recoded_selected_sample_filtered_var_chr_{chrom}.txt"
-        ),
     shell:
         """plink2 \
  --pfile {params.pfile} \
- --extract {params.snp_list} \
+ --extract {input[3]} \
  --make-pgen \
  --out {params.prefix} \
  --threads {resources.threads} \
