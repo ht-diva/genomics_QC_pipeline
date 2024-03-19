@@ -195,6 +195,7 @@ rule filter_hq_variants:
         ws_path("pgen/impute_recoded_selected_sample_filtered_var_{chrom}.pgen"),
         ws_path("pgen/impute_recoded_selected_sample_filtered_var_{chrom}.pvar"),
         ws_path("pgen/impute_recoded_selected_sample_filtered_var_{chrom}.psam"),
+        ws_path("pgen/hq_variants_impute_recoded_selected_sample_filtered_var_chr_{chrom}.txt"),
     output:
         ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_{chrom}.pgen"),
         ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_{chrom}.pvar"),
@@ -204,13 +205,10 @@ rule filter_hq_variants:
     params:
         pfile=ws_path("pgen/impute_recoded_selected_sample_filtered_var_{chrom}"),
         prefix=ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_{chrom}"),
-        snp_list=ws_path(
-            "pgen/hq_variants_impute_recoded_selected_sample_filtered_var_chr_{chrom}.txt"
-        ),
     shell:
         """plink2 \
  --pfile {params.pfile} \
- --extract {params.snp_list} \
+ --extract {input[4]} \
  --make-pgen \
  --out {params.prefix} \
  --threads {resources.threads} \
