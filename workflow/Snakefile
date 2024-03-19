@@ -74,12 +74,12 @@ rule selected_sample:
         runtime=lambda wc, attempt: attempt * 60,
     params:
         fam=config.get("fam_path"),
-        pfile=ws_path("pgen/impute_dedup_recoded_{chrom}"),
+        pfile=dest_path("pgen/impute_dedup_recoded_{chrom}"),
         prefix=ws_path("pgen/impute_recoded_selected_sample_{chrom}"),
         mind=config.get("plink2_dict").get("mind"),
     shell:
         """plink2 \
---pfile {params.pfile} \ 
+--pfile {params.pfile} \
 --keep-fam {params.fam} \
 --make-pgen \
 --mind {params.mind} \
