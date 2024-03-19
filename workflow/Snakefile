@@ -110,7 +110,7 @@ rule filter_var:
         mac=config.get("plink2_dict").get("mac"),
     shell:
         """plink2 \
- --pfile {params.pfile} \ 
+ --pfile {params.pfile} \
  --not-chr X Y XY \
  --geno {params.geno} \
  --hwe {params.hwe} \
@@ -145,7 +145,7 @@ rule create_bgen:
         ),
     shell:
         """plink2 \
- --pfile {params.pfile} \ 
+ --pfile {params.pfile} \
  --export bgen-1.2 \
  --out {params.prefix} \
  --threads {resources.threads} \
@@ -168,7 +168,7 @@ rule qctool:
         runtime=lambda wc, attempt: attempt * 240,
     shell:
         """qctool \
-    -g {input} \ 
+    -g {input} \
     -snp-stats \
     -osnp {output} \
     -threads {resources.threads} \
