@@ -56,6 +56,151 @@ rule recode_pgen:
 --threads {resources.threads} \
 --memory 90000 'require'
 """
+    
+rule selected_sample:
+     input: 
+         dest_path("pgen/impute_dedup_recoded_{chrom}.pgen"),
+         dest_path("pgen/impute_dedup_recoded_{chrom}.pvar"),
+         dest_path("pgen/impute_dedup_recoded_{chrom}.psam"),
+    output:
+         ws_path("pgen/impute_recoded_selected_sample_{chrom}.pgen"),
+         ws_path("pgen/impute_recoded_selected_sample_{chrom}.pvar"),
+         ws_path("pgen/impute_recoded_selected_sample_{chrom}.psam"),
+    container:
+        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
+     params:
+         fam = config.get("fam_path"),
+         pfile = ws_path("pgen/impute_dedup_recoded_{chrom}"),
+         prefix = ws_path("pgen/impute_recoded_selected_sample_{chrom}"),
+         mind = config.get("plink2_dict").get("mind")
+
+    shell:
+        """plink2 \
+--pfile {params.pfile} \ 
+--keep-fam {params.fam} \
+--make-pgen \
+--mind {params.mind} \
+--out {params.prefix} \
+--threads {resources.threads} \
+--memory 90000 'require'
+"""
+
+rule filtered_var:
+    input:
+        ws_path("pgen/impute_recoded_selected_sample_{chrom}.pgen"),
+        ws_path("pgen/impute_recoded_selected_sample_{chrom}.pvar"),
+        ws_path("pgen/impute_recoded_selected_sample_{chrom}.psam"),
+    output:
+        ws_path("pgen/impute_recoded_selected_sample_filtered_var_{chrom}.pgen"),
+        ws_path("pgen/impute_recoded_selected_sample_filtered_var_{chrom}.pvar"),
+        ws_path("pgen/impute_recoded_selected_sample_filtered_var_{chrom}.psam"),
+    container:
+        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
+    params:
+        pfile = ws_path("pgen/impute_recoded_selected_sample_{chrom}"),
+        prefix = ws_path("pgen/impute_recoded_selected_sample_filtered_var_{chrom}"),
+        geno = config.get("plink2_dict").get("geno")
+        hwe = config.get("plink2_dict").get("hwe")
+        mac = config.get("plink2_dict").get("mac")
+     shell:
+         """plink2 \
+ --pfile {params.pfile} \ 
+ --not-chr X Y XY \
+ --geno {params.geno} \
+ --hwe {params.hwe} \
+ --mac {params.mac} \
+ --make-pgen \
+ --out {params.prefix} \
+ --threads {resources.threads} \
+ --memory 90000 'require'
+ """       
+
+rule create_bgen:
+    input:
+        ws_path("pgen/impute_recoded_selected_sample_filtered_var_{chrom}.pgen"),
+        ws_path("pgen/impute_recoded_selected_sample_filtered_var_{chrom}.pvar"),
+        ws_path("pgen/impute_recoded_selected_sample_filtered_var_{chrom}.psam"),
+    output:
+        ws_path("pgen/bgen_impute_recoded_selected_sample_filtered_var_chr_{chrom}.bgen"),
+        ws_path("pgen/bgen_impute_recoded_selected_sample_filtered_var_chr_{chrom}.sample"),
+    container:
+        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
+    params:
+        pfile = ws_path("pgen/impute_recoded_selected_sample_filtered_var_{chrom}"),
+        prefix = ws_path("pgen/bgen_impute_recoded_selected_sample_filtered_var_chr_{chrom}"),
+     shell:
+         """plink2 \
+ --pfile {params.pfile} \ 
+ --export bgen-1.2 \
+ --out {params.prefix} \
+ --threads {resources.threads} \
+ --memory 90000 'require'
+ """     
+        
+rule qctool:
+    input:
+        ws_path("pgen/bgen_impute_recoded_selected_sample_filtered_var_chr_{chrom}.bgen"),
+    output:
+        ws_path("pgen/snp-stats_impute_recoded_selected_sample_filtered_var_chr_{chrom}.txt"),
+    container:
+	"docker://gitlab.fht.org:5050/hds-center/containers/qctools:e160ea8f"
+    shell:
+            """qctool \
+    -g {input} \ 
+    -snp-stats \
+    -osnp {output} \
+    -threads {resources.threads} \
+    """
+
+rule get_hq_variants:
+    input:
+        ws_path("pgen/snp-stats_impute_recoded_selected_sample_filtered_var_chr_{chrom}.txt")
+    output:
+        snp_list  = ws_path("pgen/hq_variants_impute_recoded_selected_sample_filtered_var_chr_{chrom}.txt"),
+        log = ws_path("pgen/report_hq_variants_chr{chrom}.log"),
+    #resources:
+    #    runtime=lambda wc, attempt: attempt * 60,
+    shell:
+        """
+        total_rows=$(grep -v ^#  {input} | wc -l) && \
+        echo "Number of rows before filtering for INFO score > 0.7: $total_rows" >> {output.log} && \
+        grep -v ^#  {input} | \
+        awk '$17 > 0.7 {{ print $2 }}'  >  {output.snp_list} && \
+        filtered_rows=$(wc -l < {output.snp_list}) && \
+        echo "Number of rows after filtering for INFO score > 0.7: $filtered_rows" >> {output.log}
+        """
+
+rule filter_hq_variants:
+	input:
+            ws_path("pgen/impute_recoded_selected_sample_filtered_var_{chrom}.pgen"),
+            ws_path("pgen/impute_recoded_selected_sample_filtered_var_{chrom}.pvar"),
+            ws_path("pgen/impute_recoded_selected_sample_filtered_var_{chrom}.psam"),
+    output:
+	   ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_{chrom}.pgen"),
+           ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_{chrom}.pvar"),
+           ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_{chrom}.psam"),
+    container:
+        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
+    params:
+        pfile = ws_path("pgen/impute_recoded_selected_sample_filtered_var_{chrom}"),
+        prefix = ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_{chrom}"),
+	snp_list = ws_path("pgen/hq_variants_impute_recoded_selected_sample_filtered_var_chr_{chrom}.txt"),
+        
+     shell:
+         """plink2 \
+ --pfile {params.pfile} \
+ --extract {params.snp_list} \
+ --make-pgen \
+ --out {params.prefix} \
+ --threads {resources.threads} \
+ --memory 90000 'require'
+ """
+    
+
+		        
+        
+
+
 
 rule header_info:
     input:
