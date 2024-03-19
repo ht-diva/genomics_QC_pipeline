@@ -7,7 +7,7 @@ fasta_path: "/exchange/healthds/public_data/reference_genomes/GRCh37/GCA_0000014
 fam_path: "/exchange/healthds/pQTL/INTERVAL/Genetic_QC_files/cleaned_genotype_INTERVAL.fam"
 
 plink2_dict:
-	mind: 0.1
-	geno: 0.1
-	hwe: 1e-15
-	mac: 10
+  mind: 0.1
+  geno: 0.1
+  hwe: 1e-15
+  mac: 10
