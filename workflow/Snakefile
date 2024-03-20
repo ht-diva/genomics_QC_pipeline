@@ -231,9 +231,18 @@ rule filter_hq_variants:
 
 rule merge_filter_hq_variants:
     input:
-        ws_path("pgen/impute_recoded_selected_sample_filtered_var_{chrom}.pgen"),
-        ws_path("pgen/impute_recoded_selected_sample_filtered_var_{chrom}.pvar"),
-        ws_path("pgen/impute_recoded_selected_sample_filtered_var_{chrom}.psam"),
+        expand(
+            ws_path("pgen/impute_recoded_selected_sample_filtered_var_{chrom}.pgen"),
+            chrom=[i for i in range(1, 23)],
+        ),
+        expand(
+            ws_path("pgen/impute_recoded_selected_sample_filtered_var_{chrom}.pvar"),
+            chrom=[i for i in range(1, 23)],
+        ),
+        expand(
+            ws_path("pgen/impute_recoded_selected_sample_filtered_var_{chrom}.psam"),
+            chrom=[i for i in range(1, 23)],
+        ),
     output:
         file_list=ws_path("pgen/merge_list.txt"),
         pmerge=ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_all"),
