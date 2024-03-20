@@ -246,7 +246,7 @@ rule merge_filter_hq_variants:
     shell:
         """
 ls -1 {params.base_prefix} | cut -f1 -d"." > {output.file_list} \
-&& plink2 --pmerge-list {output.pmerge} \
+&& plink2 --pmerge-list {output.file_list} \
 --make-pgen \
 --out {output.pmerge} \
  --threads {resources.threads} \
