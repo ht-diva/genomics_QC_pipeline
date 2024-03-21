@@ -32,5 +32,6 @@ esac
 
 # run the pipeline
 conda activate /exchange/healthds/software/envs/snakemake
-make run
+#make run
+make rerun
 

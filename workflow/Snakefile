@@ -30,6 +30,7 @@ rule all:
             ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_{chrom}.pgen"),
             chrom=[i for i in range(1, 23)],
         ),
+        ws_path("pgen/merge_list.txt"),
         ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_all"),
 
 
@@ -129,21 +130,15 @@ rule create_bgen:
         ws_path("pgen/impute_recoded_selected_sample_filtered_var_{chrom}.pvar"),
         ws_path("pgen/impute_recoded_selected_sample_filtered_var_{chrom}.psam"),
     output:
-        ws_path(
-            "pgen/bgen_impute_recoded_selected_sample_filtered_var_chr_{chrom}.bgen"
-        ),
-        ws_path(
-            "pgen/bgen_impute_recoded_selected_sample_filtered_var_chr_{chrom}.sample"
-        ),
+        ws_path("pgen/bgen_impute_recoded_selected_sample_filtered_var_chr_{chrom}.bgen"),
+        ws_path("pgen/bgen_impute_recoded_selected_sample_filtered_var_chr_{chrom}.sample"),
     container:
         "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
     resources:
         runtime=lambda wc, attempt: attempt * 60,
     params:
         pfile=ws_path("pgen/impute_recoded_selected_sample_filtered_var_{chrom}"),
-        prefix=ws_path(
-            "pgen/bgen_impute_recoded_selected_sample_filtered_var_chr_{chrom}"
-        ),
+        prefix=ws_path("pgen/bgen_impute_recoded_selected_sample_filtered_var_chr_{chrom}"),
     shell:
         """plink2 \
  --pfile {params.pfile} \
@@ -156,47 +151,39 @@ rule create_bgen:
 
 rule qctool:
     input:
-        ws_path(
-            "pgen/bgen_impute_recoded_selected_sample_filtered_var_chr_{chrom}.bgen"
-        ),
+        ws_path("pgen/bgen_impute_recoded_selected_sample_filtered_var_chr_{chrom}.bgen"),
     output:
-        ws_path(
-            "pgen/snp-stats_impute_recoded_selected_sample_filtered_var_chr_{chrom}.txt"
-        ),
+        ws_path("pgen/snp-stats_impute_recoded_selected_sample_filtered_var_chr_{chrom}.txt"),
     container:
         "docker://gitlab.fht.org:5050/hds-center/containers/qctools:e160ea8f"
     resources:
         runtime=lambda wc, attempt: attempt * 240,
     shell:
         """qctool \
-    -g {input} \
-    -snp-stats \
-    -osnp {output} \
-    -threads {resources.threads} \
+-g {input} \
+-snp-stats \
+-osnp {output} \
+-threads {resources.threads} \
     """
 
 
 rule get_hq_variants:
     input:
-        ws_path(
-            "pgen/snp-stats_impute_recoded_selected_sample_filtered_var_chr_{chrom}.txt"
-        ),
+        ws_path("pgen/snp-stats_impute_recoded_selected_sample_filtered_var_chr_{chrom}.txt"),
     output:
-        snp_list=ws_path(
-            "pgen/hq_variants_impute_recoded_selected_sample_filtered_var_chr_{chrom}.txt"
-        ),
+        snp_list=ws_path("pgen/hq_variants_impute_recoded_selected_sample_filtered_var_chr_{chrom}.txt"),
         log=ws_path("pgen/report_hq_variants_chr{chrom}.log"),
     resources:
         runtime=lambda wc, attempt: attempt * 60,
     shell:
         """
-        total_rows=$(grep -v ^#  {input} | wc -l) && \
-        echo "Number of rows before filtering for INFO score > 0.7: $total_rows" >> {output.log} && \
-        grep -v ^#  {input} | \
-        awk '$17 > 0.7 {{ print $2 }}'  >  {output.snp_list} && \
-        filtered_rows=$(wc -l < {output.snp_list}) && \
-        echo "Number of rows after filtering for INFO score > 0.7: $filtered_rows" >> {output.log}
-        """
+    total_rows=$(grep -v ^#  {input} | wc -l) && \
+    echo "Number of rows before filtering for INFO score > 0.7: $total_rows" >> {output.log} && \
+    grep -v ^#  {input} | \
+    awk '$17 > 0.7 {{ print $2 }}'  >  {output.snp_list} && \
+    filtered_rows=$(wc -l < {output.snp_list}) && \
+    echo "Number of rows after filtering for INFO score > 0.7: $filtered_rows" >> {output.log}
+    """
 
 
 rule filter_hq_variants:
@@ -204,9 +191,7 @@ rule filter_hq_variants:
         ws_path("pgen/impute_recoded_selected_sample_filtered_var_{chrom}.pgen"),
         ws_path("pgen/impute_recoded_selected_sample_filtered_var_{chrom}.pvar"),
         ws_path("pgen/impute_recoded_selected_sample_filtered_var_{chrom}.psam"),
-        ws_path(
-            "pgen/hq_variants_impute_recoded_selected_sample_filtered_var_chr_{chrom}.txt"
-        ),
+        ws_path("pgen/hq_variants_impute_recoded_selected_sample_filtered_var_chr_{chrom}.txt"),
     output:
         ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_{chrom}.pgen"),
         ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_{chrom}.pvar"),
@@ -232,15 +217,7 @@ rule filter_hq_variants:
 rule merge_filter_hq_variants:
     input:
         expand(
-            ws_path("pgen/impute_recoded_selected_sample_filtered_var_{chrom}.pgen"),
-            chrom=[i for i in range(1, 23)],
-        ),
-        expand(
-            ws_path("pgen/impute_recoded_selected_sample_filtered_var_{chrom}.pvar"),
-            chrom=[i for i in range(1, 23)],
-        ),
-        expand(
-            ws_path("pgen/impute_recoded_selected_sample_filtered_var_{chrom}.psam"),
+            ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_{chrom}.pgen"),
             chrom=[i for i in range(1, 23)],
         ),
     output:
@@ -251,13 +228,16 @@ rule merge_filter_hq_variants:
     resources:
         runtime=lambda wc, attempt: attempt * 60,
     params:
-        base_prefix=ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_*.pgen"),
+        base_prefix=expand(
+            ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_{chrom}.pgen"),
+            chrom=[i for i in range(1, 23)],
+        ),
     shell:
         """
-ls -1 {params.base_prefix} | cut -f1 -d"." > {output.file_list} \
-&& plink2 --pmerge-list {output.file_list} \
---make-pgen \
---out {output.pmerge} \
+ ls -1 {params.base_prefix} | cut -f1 -d"." > {output.file_list} \
+ && plink2 --pmerge-list {output.file_list} \
+ --make-pgen \
+ --out {output.pmerge} \
  --threads {resources.threads} \
  --memory 90000 'require'
 """
