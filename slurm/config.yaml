@@ -24,6 +24,9 @@ set-resources:
     recode_pgen:
         mem_mb: 102400 + attempt * 2048
         threads: *cores
+    recode_rsid:
+      mem_mb: 2048 + attempt * 2048
+      threads: *cores
     header_info:
         mem_mb: 2048 + attempt * 2048
     selected_sample:
