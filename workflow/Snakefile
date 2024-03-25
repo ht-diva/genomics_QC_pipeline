@@ -42,7 +42,7 @@ rule all:
 
 rule list_rs:
     input:
-        directory_path = get_pvar(config, stem=False),
+        directory_path = get_pvar(),
         #pvar_files = list(Path(directory_path).glob("*.pvar")),
     output:
         merge_rsid=ws_path("pgen/merge_rsids.txt"),
