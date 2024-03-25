@@ -15,7 +15,7 @@ def get_pgen(stem=False):
         )
     return str(Path(config.get("pgen_src_path"), config.get("pgen_template")))
 
-def get_var(stem=False):
+def get_pvar(stem=False):
     if stem:
         return str(
             Path(config.get("pgen_src_path"), Path(config.get("pvar_template")).stem)
