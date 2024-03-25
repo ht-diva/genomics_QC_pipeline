@@ -32,7 +32,7 @@ rule all:
         ),
         ws_path("pgen/recode_rsid.txt"),
 
-rule recode_rsid:
+rule recode_rs:
     input:
         get_pgen(),
     output:
@@ -40,10 +40,12 @@ rule recode_rsid:
         list_recode_rsid=ws_path("pgen/recode_rsid.txt"),
     resources:
         rountime=lambda wc, attempt: attempt * 60,
+    params:
+        prefix=ws_path("pgen/impute_dedup_recoded_{chrom}.pvar"),
     shell:
        """
-  tail -n +2 impute_dedup_*_interval.pvar > {output.merge_rsid} && \
-  awk -v OFS="\t" 'BEGIN {print "rsid", "chr:pos"} {print $3, $1":"$2":"$4":"$5}' {output.merge_rsid} >  {output.recode_rsid}
+  tail -n +2 {params.prefix} > {output.merge_rsid} && \
+  awk -v OFS="\t" 'BEGIN {print "rs", "chr:pos"} {print $3, $1":"$2":"$4":"$5}' {output.merge_rsid} >  {output.recode_rsid}
 """
 
 rule recode_pgen:
