@@ -55,7 +55,7 @@ rule list_rs:
     shell:
        """
 tail -n +2 {input.directory_path} > {output.merge_rsid} && \
-awk -v OFS="\t" 'BEGIN {print "rs", "chr:pos"} {print $3, $1":"$2":"$4":"$5}' {output.merge_rsid} >  {output.list_recode_rsid} && \
+awk -v OFS="\t" 'BEGIN {{print "rs", "chr:pos"}} {{print $3, $1":"$2":"$4":"$5}}' {output.merge_rsid} >  {output.list_recode_rsid} && \
 grep -E '^[^:]+:[^:]+:[ACGT]:[ACGT]$' {output.list_recode_rsid} > {output.list_pseudo_biallelic_var}
 """
 
