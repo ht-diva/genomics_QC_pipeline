@@ -42,8 +42,10 @@ rule all:
 
 rule list_rs:
     input:
-        directory_path = get_pvar(),
+        #directory_path = get_pvar(),
         #pvar_files = list(Path(directory_path).glob("*.pvar")),
+        expand(ws_path("/processing_data/shared_datasets/plasma_proteome/interval/genotypes/imputed/pgen/impute_dedup_{chrom}_interval.pvar"),
+            chrom=[i for i in range(1,23)]),
     output:
         merge_rsid=ws_path("pgen/merge_rsids.txt"),
         list_recode_rsid=ws_path("pgen/recode_rsids.txt"),
