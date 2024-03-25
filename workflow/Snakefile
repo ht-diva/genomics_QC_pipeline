@@ -34,18 +34,17 @@ rule all:
 
 rule recode_rs:
     input:
-        get_pgen(),
+        directory_path = get_pgen(config, stem=True),
+        pvar_files = list(Path(directory_path).glob("*.pvar")),
     output:
         merge_rsid=ws_path("pgen/merge_rsid.txt"),
         list_recode_rsid=ws_path("pgen/recode_rsid.txt"),
     resources:
         rountime=lambda wc, attempt: attempt * 60,
-    params:
-        prefix=ws_path("pgen/impute_dedup_{chrom}_interval.pvar"),
     shell:
        """
-  tail -n +2 {params.prefix} > {output.merge_rsid} && \
-  awk -v OFS="\t" 'BEGIN {print "rs", "chr:pos"} {print $3, $1":"$2":"$4":"$5}' {output.merge_rsid} >  {output.recode_rsid}
+tail -n +2 {input.pvar_files} > {output.merge_rsid} && \
+awk -v OFS="\t" 'BEGIN {print "rs", "chr:pos"} {print $3, $1":"$2":"$4":"$5}' {output.merge_rsid} >  {output.recode_rsid}
 """
 
 rule recode_pgen:
