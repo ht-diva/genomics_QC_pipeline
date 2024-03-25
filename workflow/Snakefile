@@ -32,6 +32,7 @@ rule all:
         ),
         ws_path("pgen/merge_rsids.txt"),
         ws_path("pgen/recode_rsids.txt"),
+        ws_path("pgen/pseudo_biallelic_var.txt"),
 
 rule list_rs:
     input:
@@ -40,13 +41,17 @@ rule list_rs:
     output:
         merge_rsid=ws_path("pgen/merge_rsids.txt"),
         list_recode_rsid=ws_path("pgen/recode_rsids.txt"),
+        list_pseudo_biallelic_var=ws_path("pgen/pseudo_biallelic_var.txt"),
     resources:
         rountime=lambda wc, attempt: attempt * 60,
     shell:
        """
 tail -n +2 {input.pvar_files} > {output.merge_rsid} && \
-awk -v OFS="\t" 'BEGIN {print "rs", "chr:pos"} {print $3, $1":"$2":"$4":"$5}' {output.merge_rsid} >  {output.list_recode_rsid}
+awk -v OFS="\t" 'BEGIN {print "rs", "chr:pos"} {print $3, $1":"$2":"$4":"$5}' {output.merge_rsid} >  {output.list_recode_rsid} && \
+grep -E '^[^:]+:[^:]+:[ACGT]:[ACGT]$' {output.list_recode_rsid} > {output.list_pseudo_biallelic_var}
 """
+
+#grep -E '^[^:]+:[^:]+:[ACGT]:[ACGT,]+$' > pseudo_biallelic
 
 rule recode_pgen:
     input:
