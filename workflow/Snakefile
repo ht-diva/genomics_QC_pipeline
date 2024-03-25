@@ -15,6 +15,12 @@ def get_pgen(stem=False):
         )
     return str(Path(config.get("pgen_src_path"), config.get("pgen_template")))
 
+def get_var(stem=False):
+    if stem:
+        return str(
+            Path(config.get("pgen_src_path"), Path(config.get("pvar_template")).stem)
+        )
+    return str(Path(config.get("pgen_src_path"), config.get("pvar_template")))
 
 def ws_path(file_path):
     return str(Path(config.get("workspace_path"), file_path))
@@ -36,8 +42,8 @@ rule all:
 
 rule list_rs:
     input:
-        directory_path = get_pgen(config, stem=True),
-        pvar_files = list(Path(directory_path).glob("*.pvar")),
+        directory_path = get_pvar(config, stem=True),
+        #pvar_files = list(Path(directory_path).glob("*.pvar")),
     output:
         merge_rsid=ws_path("pgen/merge_rsids.txt"),
         list_recode_rsid=ws_path("pgen/recode_rsids.txt"),
@@ -46,7 +52,7 @@ rule list_rs:
         rountime=lambda wc, attempt: attempt * 60,
     shell:
        """
-tail -n +2 {input.pvar_files} > {output.merge_rsid} && \
+tail -n +2 {input.directory_path} > {output.merge_rsid} && \
 awk -v OFS="\t" 'BEGIN {print "rs", "chr:pos"} {print $3, $1":"$2":"$4":"$5}' {output.merge_rsid} >  {output.list_recode_rsid} && \
 grep -E '^[^:]+:[^:]+:[ACGT]:[ACGT]$' {output.list_recode_rsid} > {output.list_pseudo_biallelic_var}
 """
