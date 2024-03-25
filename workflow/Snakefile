@@ -32,12 +32,12 @@ rule all:
         ),
         ws_path("pgen/recode_rsids.txt"),
 
-rule recode_rs:
+rule list_rs:
     input:
         directory_path = get_pgen(config, stem=True),
         pvar_files = list(Path(directory_path).glob("*.pvar")),
     output:
-        merge_rsid=ws_path("pgen/merge_rsid.txt"),
+        merge_rsid=ws_path("pgen/merge_rsids.txt"),
         list_recode_rsid=ws_path("pgen/recode_rsids.txt"),
     resources:
         rountime=lambda wc, attempt: attempt * 60,
