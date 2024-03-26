@@ -36,6 +36,7 @@ rule all:
             ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_{chrom}.pgen"),
             chrom=[i for i in range(1, 23)],
         ),
+        ws_path("pgen/merge_rsids.txt"),
         ws_path("pgen/recode_rsids.txt"),
 
 rule list_rs:
