@@ -51,10 +51,10 @@ rule list_rs:
         rountime=lambda wc, attempt: attempt * 60,
     shell:
        """
-tail -n +2 -q {input.directory_path} > {output.merge_rsid} && \
-awk -F'\t' '$2 in a{{if(a[$2])print a[$2];a[$2]=""; print; next}} {{a[$2]=$0}}' {output.merge_rsid} > {output.list_pseudo_biallelic_var} && \
+tail -n +2 -q {input.directory_path} > {output.list_merge_rsid} && \
+awk -F'\t' '$2 in a{{if(a[$2])print a[$2];a[$2]=""; print; next}} {{a[$2]=$0}}' {output.list_merge_rsid} > {output.list_pseudo_biallelic_var} && \
 sed -i '1s/^/CHROM\tPOS\tRSID\tREF\tALT\n/' {output.list_pseudo_biallelic_var} && \
-awk -v OFS="\t" 'BEGIN {{print "RSID", "ID"}} {{print $3, $1":"$2":"$4":"$5}}' {output.merge_rsid} >  {output.list_recode_rsid}
+awk -v OFS="\t" 'BEGIN {{print "RSID", "ID"}} {{print $3, $1":"$2":"$4":"$5}}' {output.list_merge_rsid} >  {output.list_recode_rsid}
 """
 
 rule recode_pgen:
