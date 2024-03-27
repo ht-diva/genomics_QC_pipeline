@@ -54,7 +54,7 @@ rule list_rs:
        """
 tail -n +2 -q {input.directory_path} > {output.merge_rsid} && \
 awk -F'\t' '$2 in a{{if(a[$2])print a[$2];a[$2]=""; print; next}} {{a[$2]=$0}}' {output.merge_rsid} > {output.list_pseudo_biallelic_var} && \
-awk -v OFS="\t" 'BEGIN {{print "CHROM", "POS", "RSID", "REF", "ALT"}} {output.list_pseudo_biallelic_var} > {output.list_pseudo_biallelic_var} && \
+awk -v OFS="\t" 'BEGIN {{print "CHROM", "POS", "RSID", "REF", "ALT"}}' {output.list_pseudo_biallelic_var} > {output.list_pseudo_biallelic_var} && \
 awk -v OFS="\t" 'BEGIN {{print "RSID", "ID"}} {{print $3, $1":"$2":"$4":"$5}}' {output.merge_rsid} >  {output.list_recode_rsid}
 """
 
