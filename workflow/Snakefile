@@ -181,7 +181,7 @@ rule qctool:
     output:
         ws_path("pgen/snp-stats_impute_recoded_selected_sample_filtered_var_chr_{chrom}.txt"),
     container:
-        "docker://gitlab.fht.org:5050/hds-center/containers/qctools:e160ea8f"
+        "docker://ghcr.io/ht-diva/containers/qctool:2.2.0"
     resources:
         runtime=lambda wc, attempt: attempt * 240,
     shell:
