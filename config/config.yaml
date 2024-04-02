@@ -4,5 +4,3 @@ pgen_src_path: '/processing_data/shared_datasets/plasma_proteome/interval/genoty
 pgen_template: "impute_dedup_{chrom}_interval.pgen"
 pgen_dest_path: "/exchange/healthds/pQTL/INTERVAL/Genetic_QC_files/"
 fasta_path: "/exchange/healthds/public_data/reference_genomes/GRCh37/GCA_000001405.14_GRCh37.p13_full_analysis_set.fna"
-sumstat_path: "/group/diangelantonio/users/alessia_mapelli/QC_gen_INTERVAL/QC_steps/StepB/New_analysis/recomputed_stats/recoded"
-report_path:  "/group/diangelantonio/users/alessia_mapelli/QC_gen_INTERVAL/QC_steps/StepB/New_analysis/Variants_QC/recoded"
