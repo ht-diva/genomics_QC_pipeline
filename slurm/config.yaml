@@ -24,5 +24,29 @@ set-resources:
     recode_pgen:
         mem_mb: 102400 + attempt * 2048
         threads: *cores
+    list_rs:
+      mem_mb: 102400 + attempt * 2048
+      threads: *cores
     header_info:
         mem_mb: 2048 + attempt * 2048
+    selected_sample:
+      mem_mb: 102400 + attempt * 2048
+      threads: *cores
+    filter_var:
+      mem_mb: 102400 + attempt * 2048
+      threads: *cores
+    create_bgen:
+      mem_mb: 102400 + attempt * 2048
+      threads: *cores
+    qctool:
+      mem_mb: 1024 + attempt * 1024
+      threads: *cores
+    get_hq_variants:
+      mem_mb: 2048 + attempt * 2048
+      threads: *cores
+    filter_hq_variants:
+      mem_mb: 102400 + attempt * 2048
+      threads: *cores
+    merge_filter_hq_variants:
+      mem_mb: 102400 + attempt * 2048
+      threads: *cores
