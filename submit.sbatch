@@ -22,7 +22,7 @@ case $(hostname) in
     export SINGULARITY_BIND="/cm,/exchange,/processing_data,/project,/localscratch,/scratch,/center,/group,/facility,/ssu"
     ;;
   lin-hds-*)
-    e[Oxport SINGULARITY_TMPDIR=/tmp/
+    export SINGULARITY_TMPDIR=/tmp/
     export SINGULARITY_BIND="/processing_data,/project,/center,/group,/facility,/ssu,/exchange"
     ;;
   *)
@@ -32,6 +32,4 @@ esac
 
 # run the pipeline
 conda activate /exchange/healthds/software/envs/snakemake
-#make run
-make rerun
-
+make run
