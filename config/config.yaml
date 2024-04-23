@@ -1,3 +1,6 @@
+run:
+  delivery: False
+
 # paths
 workspace_path: "results"
 pgen_src_path: '/processing_data/shared_datasets/plasma_proteome/interval/genotypes/imputed/pgen/'

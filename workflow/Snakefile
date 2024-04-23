@@ -8,55 +8,37 @@ min_version("8.4.1")
 configfile: "config/config.yaml"
 
 
-def get_pgen(stem=False):
-    if stem:
-        return str(
-            Path(config.get("pgen_src_path"), Path(config.get("pgen_template")).stem)
-        )
-    return str(Path(config.get("pgen_src_path"), config.get("pgen_template")))
-
-def get_pvar(stem=False):
-    if stem:
-        return str(
-            Path(config.get("pgen_src_path"), Path(config.get("pvar_template")).stem)
-        )
-    return str(Path(config.get("pgen_src_path"), config.get("pvar_template")))
-
-def ws_path(file_path):
-    return str(Path(config.get("workspace_path"), file_path))
+include: "rules/common.smk"
 
 
-def dest_path(file_path):
-    return str(Path(config.get("pgen_dest_path"), file_path))
+if config.get("run").get("delivery"):
+
+    include: "rules/delivery.smk"
 
 
 rule all:
     input:
-        expand(
-            ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_{chrom}.pgen"),
-            chrom=[i for i in range(1, 23)],
-        ),
-        ws_path("pgen/recode_rsids.txt"),
-        ws_path("pgen/pseudo_biallelic.txt"),
+        get_final_output(),
+
 
 rule list_rs:
     input:
-        directory_path=expand(get_pvar(),
-            chrom=[i for i in range(1,23)]),
+        directory_path=expand(get_pvar(), chrom=[i for i in range(1, 23)]),
     output:
-        list_merge_rsid = ws_path("pgen/merge_rsids.txt"),
+        list_merge_rsid=ws_path("pgen/merge_rsids.txt"),
         list_recode_rsid=ws_path("pgen/recode_rsids.txt"),
         list_pseudo_biallelic_var=ws_path("pgen/pseudo_biallelic_var.txt"),
         list_pseudo_biallelic=ws_path("pgen/pseudo_biallelic.txt"),
     resources:
         rountime=lambda wc, attempt: attempt * 60,
     shell:
-       """
+        """
 tail -n +2 -q {input.directory_path} > {output.list_merge_rsid} && \
 awk -F'\t' '$2 in a{{if(a[$2])print a[$2];a[$2]=""; print; next}} {{a[$2]=$0}}' {output.list_merge_rsid} > {output.list_pseudo_biallelic_var} && \
 awk -v OFS="\t" 'BEGIN {{print "RSID", "ID"}} {{print $3, $1":"$2":"$4":"$5}}' {output.list_pseudo_biallelic_var} > {output.list_pseudo_biallelic} && \
 awk -v OFS="\t" 'BEGIN {{print "SNPID", "rsID", "CHR", "POS", "NEA", "EA"}} {{print $1":"$2":"$4":"$5, $3, $1, $2, $4, $5}}' {output.list_merge_rsid} > {output.list_recode_rsid}
 """
+
 
 rule recode_pgen:
     input:
@@ -85,13 +67,11 @@ rule recode_pgen:
 """
 
 
-
-
 rule selected_sample:
     input:
-        dest_path("pgen/impute_dedup_recoded_{chrom}.pgen"),
-        dest_path("pgen/impute_dedup_recoded_{chrom}.pvar"),
-        dest_path("pgen/impute_dedup_recoded_{chrom}.psam"),
+        ws_path("pgen/impute_dedup_recoded_{chrom}.pgen"),
+        ws_path("pgen/impute_dedup_recoded_{chrom}.pvar"),
+        ws_path("pgen/impute_dedup_recoded_{chrom}.psam"),
     output:
         ws_path("pgen/impute_recoded_selected_sample_{chrom}.pgen"),
         ws_path("pgen/impute_recoded_selected_sample_{chrom}.pvar"),
@@ -156,15 +136,21 @@ rule create_bgen:
         ws_path("pgen/impute_recoded_selected_sample_filtered_var_{chrom}.pvar"),
         ws_path("pgen/impute_recoded_selected_sample_filtered_var_{chrom}.psam"),
     output:
-        ws_path("pgen/bgen_impute_recoded_selected_sample_filtered_var_chr_{chrom}.bgen"),
-        ws_path("pgen/bgen_impute_recoded_selected_sample_filtered_var_chr_{chrom}.sample"),
+        ws_path(
+            "pgen/bgen_impute_recoded_selected_sample_filtered_var_chr_{chrom}.bgen"
+        ),
+        ws_path(
+            "pgen/bgen_impute_recoded_selected_sample_filtered_var_chr_{chrom}.sample"
+        ),
     container:
         "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
     resources:
         runtime=lambda wc, attempt: attempt * 60,
     params:
         pfile=ws_path("pgen/impute_recoded_selected_sample_filtered_var_{chrom}"),
-        prefix=ws_path("pgen/bgen_impute_recoded_selected_sample_filtered_var_chr_{chrom}"),
+        prefix=ws_path(
+            "pgen/bgen_impute_recoded_selected_sample_filtered_var_chr_{chrom}"
+        ),
     shell:
         """plink2 \
  --pfile {params.pfile} \
@@ -177,9 +163,13 @@ rule create_bgen:
 
 rule qctool:
     input:
-        ws_path("pgen/bgen_impute_recoded_selected_sample_filtered_var_chr_{chrom}.bgen"),
+        ws_path(
+            "pgen/bgen_impute_recoded_selected_sample_filtered_var_chr_{chrom}.bgen"
+        ),
     output:
-        ws_path("pgen/snp-stats_impute_recoded_selected_sample_filtered_var_chr_{chrom}.txt"),
+        ws_path(
+            "pgen/snp-stats_impute_recoded_selected_sample_filtered_var_chr_{chrom}.txt"
+        ),
     container:
         "docker://ghcr.io/ht-diva/containers/qctool:2.2.0"
     resources:
@@ -195,9 +185,13 @@ rule qctool:
 
 rule get_hq_variants:
     input:
-        ws_path("pgen/snp-stats_impute_recoded_selected_sample_filtered_var_chr_{chrom}.txt"),
+        ws_path(
+            "pgen/snp-stats_impute_recoded_selected_sample_filtered_var_chr_{chrom}.txt"
+        ),
     output:
-        snp_list=ws_path("pgen/hq_variants_impute_recoded_selected_sample_filtered_var_chr_{chrom}.txt"),
+        snp_list=ws_path(
+            "pgen/hq_variants_impute_recoded_selected_sample_filtered_var_chr_{chrom}.txt"
+        ),
         log=ws_path("pgen/report_hq_variants_chr{chrom}.log"),
     resources:
         runtime=lambda wc, attempt: attempt * 60,
@@ -217,7 +211,9 @@ rule filter_hq_variants:
         ws_path("pgen/impute_recoded_selected_sample_filtered_var_{chrom}.pgen"),
         ws_path("pgen/impute_recoded_selected_sample_filtered_var_{chrom}.pvar"),
         ws_path("pgen/impute_recoded_selected_sample_filtered_var_{chrom}.psam"),
-        ws_path("pgen/hq_variants_impute_recoded_selected_sample_filtered_var_chr_{chrom}.txt"),
+        ws_path(
+            "pgen/hq_variants_impute_recoded_selected_sample_filtered_var_chr_{chrom}.txt"
+        ),
     output:
         ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_{chrom}.pgen"),
         ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_{chrom}.pvar"),
@@ -271,11 +267,11 @@ rule merge_filter_hq_variants:
 
 rule header_info:
     input:
-        pgen=ws_path("pgen/impute_dedup_recoded_{chrom}.pgen"),
+        pgen=get_pgen(),
     output:
-        info=ws_path("pgen/impute_dedup_recoded_{chrom}.info"),
+        info=ws_path("pgen/impute_dedup_{chrom}.info"),
     params:
-        prefix=ws_path("pgen/impute_dedup_recoded_{chrom}"),
+        prefix=ws_path("pgen/impute_dedup_{chrom}"),
     container:
         "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
     resources:
@@ -286,24 +282,3 @@ rule header_info:
 --pgen-info \
 --threads {resources.threads} &> {output.info}
 """
-
-
-# rule move_to_destination:
-#     input:
-#         pgen=ws_path("pgen/impute_dedup_recoded_{chrom}.pgen"),
-#         pvar=ws_path("pgen/impute_dedup_recoded_{chrom}.pvar"),
-#         psam=ws_path("pgen/impute_dedup_recoded_{chrom}.psam"),
-#         info=ws_path("pgen/impute_dedup_recoded_{chrom}.info"),
-#     output:
-#         pgen=dest_path("pgen/impute_dedup_recoded_{chrom}.pgen"),
-#         pvar=dest_path("pgen/impute_dedup_recoded_{chrom}.pvar"),
-#         psam=dest_path("pgen/impute_dedup_recoded_{chrom}.psam"),
-#         info=dest_path("pgen/impute_dedup_recoded_{chrom}.info"),
-#     resources:
-#         runtime=lambda wc, attempt: attempt * 120,
-#     shell:
-#         """
-#         rsync -rlptoDvz {input.pgen} {output.pgen} && \
-#         rsync -rlptoDvz {input.pvar} {output.pvar} && \
-#         rsync -rlptoDvz {input.psam} {output.psam} && \
-#         rsync -rlptoDvz {input.info} {output.info}"""
