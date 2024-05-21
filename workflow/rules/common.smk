@@ -26,7 +26,7 @@ def get_final_output():
     final_output = []
     final_output.extend(
         expand(
-            dest_path("pgen/impute_dedup_{chrom}.info"),
+            ws_path("pgen/impute_dedup_{chrom}.info"),
             chrom=[i for i in range(1, 23)],
         )
     )

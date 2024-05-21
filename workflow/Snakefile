@@ -268,15 +268,15 @@ rule header_info:
         pgen=get_pgen(),
     output:
         info=ws_path("pgen/impute_dedup_{chrom}.info"),
-    params:
-        prefix=ws_path("pgen/impute_dedup_{chrom}"),
     container:
         "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
     resources:
         runtime=lambda wc, attempt: attempt * 10,
     shell:
-        """plink2 \
---pfile {params.prefix} \
+        """
+    PFILE = $(echo "{input}" | sed 's/\.[^.]*$//');
+plink2 \
+--pfile $PFILE \
 --pgen-info \
 --threads {resources.threads} &> {output.info}
 """
