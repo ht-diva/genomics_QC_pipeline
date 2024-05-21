@@ -69,9 +69,9 @@ rule recode_pgen:
 
 rule selected_sample:
     input:
-        dest_path("pgen/impute_dedup_recoded_{chrom}.pgen"),
-        dest_path("pgen/impute_dedup_recoded_{chrom}.pvar"),
-        dest_path("pgen/impute_dedup_recoded_{chrom}.psam"),
+        ws_path("pgen/impute_dedup_recoded_{chrom}.pgen"),
+        ws_path("pgen/impute_dedup_recoded_{chrom}.pvar"),
+        ws_path("pgen/impute_dedup_recoded_{chrom}.psam"),
     output:
         ws_path("pgen/impute_recoded_selected_sample_{chrom}.pgen"),
         ws_path("pgen/impute_recoded_selected_sample_{chrom}.pvar"),
@@ -82,7 +82,7 @@ rule selected_sample:
         runtime=lambda wc, attempt: attempt * 60,
     params:
         fam=config.get("fam_path"),
-        pfile=dest_path("pgen/impute_dedup_recoded_{chrom}"),
+        pfile=ws_path("pgen/impute_dedup_recoded_{chrom}"),
         prefix=ws_path("pgen/impute_recoded_selected_sample_{chrom}"),
         mind=config.get("plink2_dict").get("mind"),
     shell:
@@ -274,7 +274,7 @@ rule header_info:
         runtime=lambda wc, attempt: attempt * 10,
     shell:
         """
-    PFILE = $(echo "{input}" | sed 's/\.[^.]*$//');
+    PFILE=$(echo "{input}" | sed 's/\.[^.]*$//');
 plink2 \
 --pfile $PFILE \
 --pgen-info \
