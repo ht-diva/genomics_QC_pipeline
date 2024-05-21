@@ -69,9 +69,9 @@ rule recode_pgen:
 
 rule selected_sample:
     input:
-        ws_path("pgen/impute_dedup_recoded_{chrom}.pgen"),
-        ws_path("pgen/impute_dedup_recoded_{chrom}.pvar"),
-        ws_path("pgen/impute_dedup_recoded_{chrom}.psam"),
+        dest_path("pgen/impute_dedup_recoded_{chrom}.pgen"),
+        dest_path("pgen/impute_dedup_recoded_{chrom}.pvar"),
+        dest_path("pgen/impute_dedup_recoded_{chrom}.psam"),
     output:
         ws_path("pgen/impute_recoded_selected_sample_{chrom}.pgen"),
         ws_path("pgen/impute_recoded_selected_sample_{chrom}.pvar"),
