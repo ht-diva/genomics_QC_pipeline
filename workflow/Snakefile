@@ -267,7 +267,7 @@ rule header_info:
     input:
         pgen=get_pgen(),
     output:
-        info=dest_path("pgen/impute_dedup_{chrom}.info"),
+        info=ws_path("pgen/impute_dedup_{chrom}.info"),
     params:
         prefix=ws_path("pgen/impute_dedup_{chrom}"),
     container:
