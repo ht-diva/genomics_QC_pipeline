@@ -41,7 +41,7 @@ def get_final_output():
     else:
         final_output.extend(
             expand(
-                ws_path(
+                dest_path(
                     "pgen/impute_recoded_selected_sample_filter_hq_var_{chrom}.{ext}"
                 ),
                 chrom=[i for i in range(1, 23)],
