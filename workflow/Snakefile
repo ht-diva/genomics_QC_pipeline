@@ -283,7 +283,7 @@ rule update_pgen_alleles:
         table_mapping = config.get('mapping_table')
 
     shell:
-        """shell \
+        """
     paste <(zgrep "False" {params.table_mapping} | cut -f1 | cut -d":" -f1-4) <(zgrep "False" {params.table_mapping} | cut -f2 | cut -d":" -f3,4 | tr ":" "\t") <(zgrep "False" {params.table_mapping} | cut -f1 | cut -d":" -f3,4 | tr ":" "\t") > {output.mapping_table_right_alleles} &&
     plink2 \
     --update-alleles {output.mapping_table_right_alleles} \
