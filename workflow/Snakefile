@@ -293,7 +293,7 @@ rule update_pgen_alleles:
     --memory 90000 'require' &&
     plink2 \
     --pfile {params.out_file} \
-    --missing scols=+nmissdosage,+fmissdosage --pgen-info --threads {resources.threads} &> {output.info_file}
+    --pgen-info --threads {resources.threads} &> {output.info_file}
 """
 
 rule merge_filter_hq_variants:
