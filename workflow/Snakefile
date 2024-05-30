@@ -235,6 +235,82 @@ rule filter_hq_variants:
  --memory 90000 'require'
  """
 
+rule update_pgen_id:
+    input:
+        ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_{chrom}.pgen"),
+        ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_{chrom}.pvar"),
+        ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_{chrom}.psam"),
+    output:
+        ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_new_id_{chrom}.pgen"),
+        ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_new_id_{chrom}.pvar"),
+        ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_new_id_{chrom}.psam"),
+    container:
+        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
+    resources:
+        runtime=lambda wc, attempt: attempt * 60,
+    params:
+        pfile = ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_{chrom}"),
+        table_mapping = config.get('mapping_table')
+    shell:
+        """plink2 \
+    --update-name {params.table_mapping} 1 2\
+    --pfile {params.pfile} \
+    --make-pgen \
+    --out {output} \
+    --threads {resources.threads} \
+    --memory 90000 'require'
+"""
+
+rule update_pgen_alleles:
+    input:
+        ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_new_id_{chrom}.pgen"),
+        ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_new_id_{chrom}.pvar"),
+        ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_new_id_{chrom}.psam"),
+    output:
+        ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.pgen"),
+        ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.pvar"),
+        ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.psam"),
+        mapping_table_right_alleles = ws_path("pgen/snp_mapping_right_alleles.tsv"),
+        info_file = ws.path("pgen/dosage_info_{chrom}")
+
+    container:
+        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
+    resources:
+        runtime=lambda wc, attempt: attempt * 60,
+    params:
+        pfile = ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_new_id{chrom}"),
+        out_file = ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}")
+
+    shell:
+        """shell \
+    paste <(zgrep "False" {output.unzip_mapping_table} | cut -f1 | cut -d":" -f1-4) <(zgrep "False" {output.unzip_mapping_table} | cut -f2 | cut -d":" -f3,4 | tr ":" "\t") <(zgrep "False" {output.unzip_mapping_table} | cut -f1 | cut -d":" -f3,4 | tr ":" "\t") > {output.mapping_table_right_alleles} &&
+    plink2 \
+    --update-alleles {output.mapping_table_right_alleles} \
+    --make-pgen \
+    --pfile {params.pfile} \
+    --out {params.out_file} \
+    --threads {resources.threads} \
+    --memory 90000 'require' &&
+    plink2 \
+    --pfile {params.out_file} \
+    --missing scols=+nmissdosage,+fmissdosage --pgen-info --threads {resources.threads} &> {output.info_file}
+"""
+
+
+
+
+#sistemiamo gli ID
+plink2 --update-name /exchange/healthds/pQTL/results/INTERVAL/qced_sumstats/table.snp_mapping.tsv.gz 1 2 --pfile impute_recoded_selected_sample_filter_hq_var_11 --make-pgen --threads 1 --out prova
+
+#creiamo file con alleli vecchi-nuovi
+paste <(grep "False" snp_mapping.tsv | cut -f1 | cut -d":" -f1-4) <(grep "False" snp_mapping.tsv | cut -f2 | cut -d":" -f3,4 | tr ":" "\t") <(grep "False" snp_mapping.tsv | cut -f1 | cut -d":" -f3,4 | tr ":" "\t") > snp_mapping_right_alleles.tsv
+
+nei pgen aggiorniamo anche ref-alt alleles
+plink2 --update-alleles snp_mapping_right_alleles.tsv --make-pgen --pfile prova --threads 1 --out prova2
+
+come controllo finale aggiungere:
+plink2 --pfile prova2 --missing scols=+nmissdosage,+fmissdosage --pgen-info --threads 1
+
 
 rule merge_filter_hq_variants:
     input:
@@ -263,6 +339,8 @@ rule merge_filter_hq_variants:
  --threads {resources.threads} \
  --memory 90000 'require'
 """
+
+
 rule header_info:
     input:
         pgen=get_pgen(),
