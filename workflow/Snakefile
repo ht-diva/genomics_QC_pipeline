@@ -271,7 +271,7 @@ rule update_pgen_alleles:
         ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.pvar"),
         ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.psam"),
         mapping_table_right_alleles = ws_path("pgen/snp_mapping_right_alleles.tsv"),
-        info_file = ws.path("pgen/dosage_info_{chrom}")
+        info_file = ws_path("pgen/dosage_info_{chrom}")
 
     container:
         "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
