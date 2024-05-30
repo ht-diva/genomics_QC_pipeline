@@ -42,7 +42,7 @@ def get_final_output():
         final_output.extend(
             expand(
                 ws_path(
-                    "pgen/impute_recoded_selected_sample_filter_hq_var_{chrom}.{ext}"
+                    "pgen/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.{ext}"
                 ),
                 chrom=[i for i in range(1, 23)],
                 ext=["pgen", "pvar", "psam"],
