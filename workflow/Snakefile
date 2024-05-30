@@ -270,7 +270,7 @@ rule update_pgen_alleles:
         ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.pgen"),
         ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.pvar"),
         ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.psam"),
-        mapping_table_right_alleles = ws_path("pgen/snp_mapping_right_alleles.tsv"),
+        mapping_table_right_alleles = ws_path("/pgen/snp_mapping_right_alleles.tsv"),
         info_file = ws_path("pgen/dosage_info_{chrom}")
 
     container:
@@ -279,11 +279,12 @@ rule update_pgen_alleles:
         runtime=lambda wc, attempt: attempt * 60,
     params:
         pfile = ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_new_id_{chrom}"),
-        out_file = ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}")
+        out_file = ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}"),
+        table_mapping = config.get('mapping_table')
 
     shell:
         """shell \
-    paste <(zgrep "False" {output.unzip_mapping_table} | cut -f1 | cut -d":" -f1-4) <(zgrep "False" {output.unzip_mapping_table} | cut -f2 | cut -d":" -f3,4 | tr ":" "\t") <(zgrep "False" {output.unzip_mapping_table} | cut -f1 | cut -d":" -f3,4 | tr ":" "\t") > {output.mapping_table_right_alleles} &&
+    paste <(zgrep "False" {params.table_mapping} | cut -f1 | cut -d":" -f1-4) <(zgrep "False" {params.table_mapping} | cut -f2 | cut -d":" -f3,4 | tr ":" "\t") <(zgrep "False" {params.table_mapping} | cut -f1 | cut -d":" -f3,4 | tr ":" "\t") > {output.mapping_table_right_alleles} &&
     plink2 \
     --update-alleles {output.mapping_table_right_alleles} \
     --make-pgen \
