@@ -27,7 +27,7 @@ if config.get("run").get("delivery"):
 rule all:
     input:
         #get_final_output(),
-        expand(ws_path("updated_allele/interval_imputed_info70_{chrom}.bed"), chrom=[i for i in range(6, 7)]),
+        expand(ws_path("updated_snpid/interval_imputed_info70_{chrom}.bed"), chrom=[i for i in range(6, 7)]),
 
 
 rule pgen2bed:
@@ -89,3 +89,31 @@ rule rename_allele:
         """
 
 #paste <(zgrep "False" ${mapping_table} | cut -f2 | cut -d":" -f1-4) <(zgrep "False" ${mapping_table} | cut -f2 | cut -d":" -f3,4 | tr ":" "\t") <(zgrep "False" ${mapping_table} | cut -f1 | cut -d":" -f3,4 | tr ":" "\t") > results/snp_mapping_right_alleles.tsv
+
+rule rename_snpid:
+    input:
+        ws_path("updated_allele/interval_imputed_info70_{chrom}.bed"),
+        ws_path("updated_allele/interval_imputed_info70_{chrom}.bim"),
+        ws_path("updated_allele/interval_imputed_info70_{chrom}.fam"),
+    output:
+        ws_path("updated_snpid/interval_imputed_info70_{chrom}.bed"),
+        ws_path("updated_snpid/interval_imputed_info70_{chrom}.bim"),
+        ws_path("updated_snpid/interval_imputed_info70_{chrom}.fam"),
+    container:
+        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
+    resources:
+        runtime=lambda wc, attempt: attempt * 60,
+    params:
+        bfile=ws_path("updated_allele/interval_imputed_info70_{chrom}"),
+        prefix=ws_path("updated_snpid/interval_imputed_info70_{chrom}"),
+        table_mapping=config.get("mapping_table"),
+    shell:
+        """
+        plink2 \
+            --bfile {params.bfile} \
+            --make-bed  \
+            --update-name {params.table_mapping} 1 2 \
+            --out {params.prefix} \
+            --threads {resources.threads} \
+            --memory 90000 'require'
+        """
