@@ -50,3 +50,12 @@ set-resources:
     merge_filter_hq_variants:
       mem_mb: 102400 + attempt * 2048
       threads: *cores
+    pgen2bed:
+      mem_mb: 102400 + attempt * 2048
+      threads: *cores
+    rename_allele:
+      mem_mb: 102400 + attempt * 2048
+      threads: *cores
+    rename_snpid:
+      mem_mb: 102400 + attempt * 2048
+      threads: *cores
