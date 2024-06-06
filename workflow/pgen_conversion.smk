@@ -27,7 +27,7 @@ if config.get("run").get("delivery"):
 rule all:
     input:
         #get_final_output(),
-        expand(ws_path("updated_snpid/interval_imputed_info70_{chrom}.bed"), chrom=[i for i in range(6, 7)]),
+        expand(ws_path("updated_snpid/chr{chrom}.bed"), chrom=[i for i in range(1, 23)]),
 
 
 rule pgen2bed:
@@ -37,16 +37,16 @@ rule pgen2bed:
     #     ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_{chrom}.pvar"),
     #     ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_{chrom}.psam"),
     output:
-        ws_path("plinkFormat/interval_imputed_info70_{chrom}.bed"),
-        ws_path("plinkFormat/interval_imputed_info70_{chrom}.bim"),
-        ws_path("plinkFormat/interval_imputed_info70_{chrom}.fam"),
+        ws_path("bed/interval_imputed_info70_{chrom}.bed"),
+        ws_path("bed/interval_imputed_info70_{chrom}.bim"),
+        ws_path("bed/interval_imputed_info70_{chrom}.fam"),
     container:
         "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
     resources:
         runtime=lambda wc, attempt: attempt * 60,
     params:
         pfile=get_pgen2(stem=True),
-        prefix=ws_path("plinkFormat/interval_imputed_info70_{chrom}"),
+        prefix=ws_path("bed/interval_imputed_info70_{chrom}"),
     shell:
         """
         plink2 \
@@ -61,9 +61,9 @@ rule pgen2bed:
 
 rule rename_allele:
     input:
-        ws_path("plinkFormat/interval_imputed_info70_{chrom}.bed"),
-        ws_path("plinkFormat/interval_imputed_info70_{chrom}.bim"),
-        ws_path("plinkFormat/interval_imputed_info70_{chrom}.fam"),
+        ws_path("bed/interval_imputed_info70_{chrom}.bed"),
+        ws_path("bed/interval_imputed_info70_{chrom}.bim"),
+        ws_path("bed/interval_imputed_info70_{chrom}.fam"),
     output:
         ws_path("updated_allele/interval_imputed_info70_{chrom}.bed"),
         ws_path("updated_allele/interval_imputed_info70_{chrom}.bim"),
@@ -73,7 +73,7 @@ rule rename_allele:
     resources:
         runtime=lambda wc, attempt: attempt * 60,
     params:
-        bfile=ws_path("plinkFormat/interval_imputed_info70_{chrom}"),
+        bfile=ws_path("bed/interval_imputed_info70_{chrom}"),
         prefix=ws_path("updated_allele/interval_imputed_info70_{chrom}"),
         table_mapping=config.get("mapping_table"),
         mapping_table_right_alleles=ws_path("snp_mapping_right_alleles.tsv"),
@@ -96,16 +96,16 @@ rule rename_snpid:
         ws_path("updated_allele/interval_imputed_info70_{chrom}.bim"),
         ws_path("updated_allele/interval_imputed_info70_{chrom}.fam"),
     output:
-        ws_path("updated_snpid/interval_imputed_info70_{chrom}.bed"),
-        ws_path("updated_snpid/interval_imputed_info70_{chrom}.bim"),
-        ws_path("updated_snpid/interval_imputed_info70_{chrom}.fam"),
+        ws_path("updated_snpid/chr{chrom}.bed"),
+        ws_path("updated_snpid/chr{chrom}.bim"),
+        ws_path("updated_snpid/chr{chrom}.fam"),
     container:
         "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
     resources:
         runtime=lambda wc, attempt: attempt * 60,
     params:
         bfile=ws_path("updated_allele/interval_imputed_info70_{chrom}"),
-        prefix=ws_path("updated_snpid/interval_imputed_info70_{chrom}"),
+        prefix=ws_path("updated_snpid/chr{chrom}"),
         table_mapping=config.get("mapping_table"),
     shell:
         """
