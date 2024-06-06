@@ -58,3 +58,34 @@ rule pgen2bed:
             --memory 90000 'require'
         """
 
+
+rule rename_allele:
+    input:
+        ws_path("plinkFormat/interval_imputed_info70_{chrom}.bed"),
+        ws_path("plinkFormat/interval_imputed_info70_{chrom}.bim"),
+        ws_path("plinkFormat/interval_imputed_info70_{chrom}.fam"),
+    output:
+        ws_path("updated_allele/interval_imputed_info70_{chrom}.bed"),
+        ws_path("updated_allele/interval_imputed_info70_{chrom}.bim"),
+        ws_path("updated_allele/interval_imputed_info70_{chrom}.fam"),
+    container:
+        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
+    resources:
+        runtime=lambda wc, attempt: attempt * 60,
+    params:
+        bfile=ws_path("plinkFormat/interval_imputed_info70_{chrom}"),
+        prefix=ws_path("updated_allele/interval_imputed_info70_{chrom}"),
+        table_mapping=config.get("mapping_table"),
+        mapping_table_right_alleles=ws_path("snp_mapping_right_alleles.tsv"),
+    shell:
+        """
+        plink2 \
+            --bfile {params.bfile} \
+            --make-bed  \
+            --update-alleles {params.mapping_table_right_alleles} \
+            --out {params.prefix} \
+            --threads {resources.threads} \
+            --memory 90000 'require'
+        """
+
+#paste <(zgrep "False" ${mapping_table} | cut -f2 | cut -d":" -f1-4) <(zgrep "False" ${mapping_table} | cut -f2 | cut -d":" -f3,4 | tr ":" "\t") <(zgrep "False" ${mapping_table} | cut -f1 | cut -d":" -f3,4 | tr ":" "\t") > results/snp_mapping_right_alleles.tsv
