@@ -49,4 +49,11 @@ def get_final_output():
             )
         )
 
+    final_output.extend(
+        expand(
+            "bed/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}",
+            chrom=[i for i in range(1,23)],
+        )
+    )
+
     return final_output
