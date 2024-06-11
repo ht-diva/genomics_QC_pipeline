@@ -17,9 +17,9 @@ rule sync_tables:
 
 rule sync_pfiles:
     input:
-        pgen=ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_{chrom}.pgen"),
-        pvar=ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_{chrom}.pvar"),
-        psam=ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_{chrom}.psam"),
+        pgen=ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_new_id_{chrom}.pgen"),
+        pvar=ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_new_id_{chrom}.pvar"),
+        psam=ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_new_id_{chrom}.psam"),
     output:
         touch(dest_path("pgen/.{chrom}_delivery.done")),
     params:
