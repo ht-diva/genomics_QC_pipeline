@@ -32,19 +32,19 @@ rule sync_pfiles:
         rsync -rlptoDvz --chmod "D755,F644" {input.pvar} {params.folder} && \
         rsync -rlptoDvz --chmod "D755,F644" {input.psam} {params.folder}"""
 
-#rule sync_bedfiles:
-#    input:
-#        bed=ws_path("bed/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.bed"),
-#        bim=ws_path("bed/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.bim"),
-#        fam=ws_path("bed/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.fam"),
-#    output:
-#        touch(dest_path("bed/.{chrom}_delivery.done")),
-#    params:
-#        folder=dest_path("bed/"),
-#    resources:
-#        runtime= lambda wc,attempt: attempt * 60,
-#    shell:
-#        """
-#        rsync -rlptoDvz --chmod "D755,F644" {input.bed} {params.folder} && \
-#        rsync -rlptoDvz --chmod "D755,F644" {input.bim} {params.folder} && \
-#       rsync -rlptoDvz --chmod "D755,F644" {input.fam} {params.folder}"""
+rule sync_bedfiles:
+    input:
+        bed=ws_path("bed/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.bed"),
+        bim=ws_path("bed/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.bim"),
+        fam=ws_path("bed/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.fam"),
+    output:
+        touch(dest_path("bed/.{chrom}_delivery.done")),
+    params:
+        folder=dest_path("bed/"),
+    resources:
+        runtime= lambda wc,attempt: attempt * 60,
+    shell:
+        """
+        rsync -rlptoDvz --chmod "D755,F644" {input.bed} {params.folder} && \
+        rsync -rlptoDvz --chmod "D755,F644" {input.bim} {params.folder} && \
+        rsync -rlptoDvz --chmod "D755,F644" {input.fam} {params.folder}"""

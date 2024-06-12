@@ -47,13 +47,13 @@ set-resources:
     filter_hq_variants:
       mem_mb: 102400 + attempt * 2048
       threads: *cores
-    merge_filter_hq_variants:
-      mem_mb: 102400 + attempt * 2048
-      threads: *cores
     update_pgen_id:
       mem_mb: 102400 + attempt * 2048
       threads: *cores
     update_pgen_alleles:
+      mem_mb: 102400 + attempt * 2048
+      threads: *cores
+    pgen2bed:
       mem_mb: 102400 + attempt * 2048
       threads: *cores
 
