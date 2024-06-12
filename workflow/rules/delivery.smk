@@ -3,10 +3,10 @@ rule sync_tables:
         recode=ws_path("pgen/recode_rsids.txt"),
         biallelic=ws_path("pgen/pseudo_biallelic.txt"),
     output:
-        touch(protected(dest_path("pgen/.tables_delivery.done"))),
+        touch(protected(dest_path_pgen("pgen/.tables_delivery.done"))),
     params:
-        recode=dest_path("pgen/recode_rsids.txt"),
-        biallelic=dest_path("pgen/pseudo_biallelic.txt"),
+        recode=dest_path_pgen("pgen/recode_rsids.txt"),
+        biallelic=dest_path_pgen("pgen/pseudo_biallelic.txt"),
     resources:
         runtime=lambda wc, attempt: attempt * 10,
     shell:
@@ -21,7 +21,7 @@ rule sync_pfiles:
         pvar=ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.pvar"),
         psam=ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.psam"),
     output:
-        touch(dest_path("pgen/.{chrom}_delivery.done")),
+        touch(dest_path_pgen("pgen/.{chrom}_delivery.done")),
     params:
         folder=dest_path_pgen("pgen/"),
     resources:
@@ -38,7 +38,7 @@ rule sync_bedfiles:
         bim=ws_path("bed/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.bim"),
         fam=ws_path("bed/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.fam"),
     output:
-        touch(dest_path("bed/.{chrom}_delivery.done")),
+        touch(dest_path_bed("bed/.{chrom}_delivery.done")),
     params:
         folder=dest_path_bed("bed/"),
     resources:
