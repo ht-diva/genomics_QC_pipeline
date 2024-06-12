@@ -43,8 +43,8 @@ rule sync_pfiles:
 #        folder=dest_path("bed/"),
 #    resources:
 #        runtime= lambda wc,attempt: attempt * 60,
-    shell:
-        """
-        rsync -rlptoDvz --chmod "D755,F644" {input.bed} {params.folder} && \
-        rsync -rlptoDvz --chmod "D755,F644" {input.bim} {params.folder} && \
-        rsync -rlptoDvz --chmod "D755,F644" {input.fam} {params.folder}"""
+#    shell:
+#        """
+#        rsync -rlptoDvz --chmod "D755,F644" {input.bed} {params.folder} && \
+#        rsync -rlptoDvz --chmod "D755,F644" {input.bim} {params.folder} && \
+#       rsync -rlptoDvz --chmod "D755,F644" {input.fam} {params.folder}"""
