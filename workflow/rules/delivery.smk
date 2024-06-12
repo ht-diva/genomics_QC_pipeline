@@ -23,7 +23,7 @@ rule sync_pfiles:
     output:
         touch(dest_path("pgen/.{chrom}_delivery.done")),
     params:
-        folder=dest_path("pgen/"),
+        folder=dest_path_pgen("pgen/"),
     resources:
         runtime=lambda wc, attempt: attempt * 60,
     shell:
@@ -40,7 +40,7 @@ rule sync_bedfiles:
     output:
         touch(dest_path("bed/.{chrom}_delivery.done")),
     params:
-        folder=dest_path("bed/"),
+        folder=dest_path_bed("bed/"),
     resources:
         runtime= lambda wc,attempt: attempt * 60,
     shell:
