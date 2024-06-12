@@ -18,7 +18,8 @@ if config.get("run").get("delivery"):
 
 rule all:
     input:
-        get_final_output(),
+        get_final_output_pgen(),
+        get_final_output_bed(),
 
 
 rule list_rs:
