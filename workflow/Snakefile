@@ -235,6 +235,35 @@ rule filter_hq_variants:
  --memory 90000 'require'
  """
 
+rule merge_filter_hq_variants:
+    input:
+        expand(
+            ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_{chrom}.pgen"),
+            chrom=[i for i in range(1, 23)],
+        ),
+    output:
+        file_list=ws_path("pgen/merge_list.txt"),
+        pmerge=ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_all"),
+    container:
+        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
+    resources:
+        runtime=lambda wc, attempt: attempt * 60,
+    params:
+        base_prefix=expand(
+            ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_{chrom}.pgen"),
+            chrom=[i for i in range(1, 23)],
+        ),
+    shell:
+        """
+ ls -1 {params.base_prefix} | cut -f1 -d"." > {output.file_list} \
+ && plink2 --pmerge-list {output.file_list} \
+ --make-pgen \
+ --out {output.pmerge} \
+ --threads {resources.threads} \
+ --memory 90000 'require'
+"""
+
+
 
 rule update_pgen_id:
     input:
@@ -270,16 +299,9 @@ rule update_pgen_alleles:
         ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_new_id_{chrom}.pvar"),
         ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_new_id_{chrom}.psam"),
     output:
-        ws_path(
-            "pgen/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.pgen"
-        ),
-        ws_path(
-            "pgen/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.pvar"
-        ),
-        ws_path(
-            "pgen/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.psam"
-        ),
-        info_file=ws_path("pgen/dosage_info_{chrom}"),
+        ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.pgen"),
+        ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.pvar"),
+        ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.psam"),
     container:
         "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
     resources:
@@ -292,7 +314,7 @@ rule update_pgen_alleles:
             "pgen/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}"
         ),
         table_mapping=config.get("mapping_table"),
-        mapping_table_right_alleles=ws_path("/pgen/snp_mapping_right_alleles.tsv"),
+        mapping_table_right_alleles=ws_path("pgen/snp_mapping_right_alleles.tsv"),
     shell:
         """
     paste <(zcat {params.table_mapping} | grep "False" | cut -f1 | cut -d":" -f1-4) <(zcat {params.table_mapping} | grep "False" | cut -f2 | cut -d":" -f3,4 | tr ":" "\t") <(zcat {params.table_mapping} | grep "False" | cut -f1 | cut -d":" -f3,4 | tr ":" "\t") > {params.mapping_table_right_alleles} &&
@@ -302,29 +324,25 @@ rule update_pgen_alleles:
     --pfile {params.pfile} \
     --out {params.out_file} \
     --threads {resources.threads} \
-    --memory 90000 'require' &&
-    plink2 \
-    --pfile {params.out_file} \
-    --pgen-info --threads {resources.threads} &> {output.info_file}
+    --memory 90000 'require'
 """
 
-
-rule merge_filter_hq_variants:
+rule merge_filter_hq_variants_new_id_alleles_pgen:
     input:
         expand(
-            ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_{chrom}.pgen"),
+            ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.pgen"),
             chrom=[i for i in range(1, 23)],
         ),
     output:
-        file_list=ws_path("pgen/merge_list.txt"),
-        pmerge=ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_all"),
+        file_list=ws_path("pgen/merge_list_new_id_alleles.txt"),
+        pmerge=ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all"),
     container:
         "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
     resources:
         runtime=lambda wc, attempt: attempt * 60,
     params:
         base_prefix=expand(
-            ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_{chrom}.pgen"),
+            ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.pgen"),
             chrom=[i for i in range(1, 23)],
         ),
     shell:
@@ -336,6 +354,62 @@ rule merge_filter_hq_variants:
  --threads {resources.threads} \
  --memory 90000 'require'
 """
+
+rule pgen2bed:
+    input:
+        ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.pgen"),
+        ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.pvar"),
+        ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.psam"),
+    output:
+        ws_path("bed/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.bed"),
+        ws_path("bed/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.bim"),
+        ws_path("bed/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.fam"),
+    container:
+        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
+    resources:
+        runtime=lambda wc, attempt: attempt * 60,
+    params:
+        prefix=ws_path("bed/interval_imputed_info70_{chrom}"),
+    shell:
+        """
+        plink2 \
+            --pfile {params.pfile} \
+            --make-bed  \
+            --alt1-allele 'force' {params.pfile}.pvar 4 3 \
+            --out {params.prefix} \
+            --threads {resources.threads} \
+            --memory 90000 'require'
+        """
+
+
+rule merge_filter_hq_variants_new_id_alleles_bed:
+    input:
+        expand(
+            ws_path("bed/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.bed"),
+            chrom=[i for i in range(1, 23)],
+        ),
+    output:
+        file_list=ws_path("bed/merge_list_new_id_alleles.txt"),
+        pmerge=ws_path("bed/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all"),
+    container:
+        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
+    resources:
+        runtime=lambda wc, attempt: attempt * 60,
+    params:
+        base_prefix=expand(
+            ws_path("bed/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.bed"),
+            chrom=[i for i in range(1, 23)],
+        ),
+    shell:
+        """
+ ls -1 {params.base_prefix} | cut -f1 -d"." > {output.file_list} \
+ && plink2 --pmerge-list {output.file_list} \
+ --make-pgen \
+ --out {output.pmerge} \
+ --threads {resources.threads} \
+ --memory 90000 'require'
+"""
+
 
 
 rule header_info:
