@@ -17,12 +17,24 @@ rule sync_tables:
 
 rule sync_pfiles:
     input:
-        pgen_c=ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.pgen"),
-        pvar_c=ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.pvar"),
-        psam_c=ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.psam"),
-        pgen_a=ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all.pgen"),
-        pvar_a=ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all.pvar"),
-        psam_a=ws_path("pgen/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all.psam"),
+        pgen_c=ws_path(
+            "pgen/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.pgen"
+        ),
+        pvar_c=ws_path(
+            "pgen/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.pvar"
+        ),
+        psam_c=ws_path(
+            "pgen/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.psam"
+        ),
+        pgen_a=ws_path(
+            "pgen/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all.pgen"
+        ),
+        pvar_a=ws_path(
+            "pgen/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all.pvar"
+        ),
+        psam_a=ws_path(
+            "pgen/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all.psam"
+        ),
     output:
         touch(dest_path_pgen("pgen/.{chrom}_delivery.done")),
     params:
@@ -38,20 +50,33 @@ rule sync_pfiles:
         rsync -rlptoDvz --chmod "D755,F644" {input.pvar_a} {params.folder} && \
         rsync -rlptoDvz --chmod "D755,F644" {input.psam_a} {params.folder} """
 
+
 rule sync_bedfiles:
     input:
-        bed_c=ws_path("bed/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.bed"),
-        bim_c=ws_path("bed/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.bim"),
-        fam_c=ws_path("bed/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.fam"),
-        bed_a=ws_path("bed/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all.bed"),
-        bim_a=ws_path("bed/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all.bim"),
-        fam_a=ws_path("bed/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all.fam"),
+        bed_c=ws_path(
+            "bed/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.bed"
+        ),
+        bim_c=ws_path(
+            "bed/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.bim"
+        ),
+        fam_c=ws_path(
+            "bed/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.fam"
+        ),
+        bed_a=ws_path(
+            "bed/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all.bed"
+        ),
+        bim_a=ws_path(
+            "bed/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all.bim"
+        ),
+        fam_a=ws_path(
+            "bed/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all.fam"
+        ),
     output:
         touch(dest_path_bed("bed/.{chrom}_delivery.done")),
     params:
         folder=dest_path_bed("bed/"),
     resources:
-        runtime= lambda wc,attempt: attempt * 60,
+        runtime=lambda wc, attempt: attempt * 60,
     shell:
         """
         rsync -rlptoDvz --chmod "D755,F644" {input.bed_c} {params.folder} && \
