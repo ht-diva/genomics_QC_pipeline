@@ -82,12 +82,4 @@ def get_final_output():
                 ext=["bed", "bim", "fam"],
             )
         ),
-        # final_output.extend(
-        #     expand(
-        #         ws_path(
-        #             "bed/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all.{ext}"
-        #         ),
-        #         ext=["bed", "bim", "fam"],
-        #     )
-        # ),
     return final_output
