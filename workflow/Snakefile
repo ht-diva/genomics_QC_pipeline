@@ -341,7 +341,7 @@ rule update_pgen_id:
         table_mapping=config.get("mapping_table"),
     shell:
         """plink2 \
-    --update-name {params.table_mapping} 1 2\
+    --update-name {params.table_mapping} 1 2 \
     --pfile {params.pfile} \
     --make-pgen \
     --out {params.prefix} \
@@ -384,7 +384,7 @@ rule update_pgen_alleles:
         ),
         table_mapping=config.get("mapping_table"),
         mapping_table_right_alleles=ws_path(
-            "pgen/qc_recoded_harmonised/snp_mapping_right_alleles.tsv"
+            "pgen/qc_recoded_harmonised/snp_mapping_right_alleles_{chrom}.tsv"
         ),
     shell:
         """
@@ -397,7 +397,6 @@ rule update_pgen_alleles:
     --threads {resources.threads} \
     --memory 90000 'require'
 """
-
 
 rule merge_filter_hq_variants_new_id_alleles_pgen:
     input:
