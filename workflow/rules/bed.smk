@@ -38,7 +38,7 @@ rule pgen2bed:
             --alt1-allele 'force' {params.pfile}.pvar 4 3 \
             --out {params.prefix} \
             --threads {resources.threads} \
-            --memory 90000 'require'
+            --memory 1900 'require'
         """
 
 
@@ -78,7 +78,8 @@ rule merge_filter_hq_variants_new_id_alleles_bed:
     shell:
         """
  ls -1 {params.base_prefix} | cut -f1 -d"." > {output.file_list} \
- && plink2 --merge-list {output.file_list} \
+ && plink2 \
+ --pmerge-list {output.file_list} bfile \
  --make-bed \
  --out {params.pmerge} \
  --threads {resources.threads} \
