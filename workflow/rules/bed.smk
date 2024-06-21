@@ -38,7 +38,7 @@ rule pgen2bed:
             --alt1-allele 'force' {params.pfile}.pvar 4 3 \
             --out {params.prefix} \
             --threads {resources.threads} \
-            --memory 90000 'require'
+            --memory 1900 'require'
         """
 
 

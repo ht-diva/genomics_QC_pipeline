@@ -19,7 +19,7 @@ def ws_path(file_path):
 
 
 def dest_path(file_path):
-    return str(Path(config.get("pgen_dest_path"), file_path))
+    return str(Path(config.get("dest_path"), file_path))
 
 
 def get_final_output():

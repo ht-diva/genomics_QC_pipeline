@@ -134,7 +134,7 @@ rule filter_var:
  --make-pgen \
  --out {params.prefix} \
  --threads {resources.threads} \
- --memory 90000 'require'
+ --memory 19000 'require'
  """
 
 
@@ -173,7 +173,7 @@ rule create_bgen:
  --export bgen-1.2 \
  --out {params.prefix} \
  --threads {resources.threads} \
- --memory 90000 'require'
+ --memory 19000 'require'
  """
 
 
@@ -264,7 +264,7 @@ rule filter_hq_variants:
  --make-pgen \
  --out {params.prefix} \
  --threads {resources.threads} \
- --memory 90000 'require'
+ --memory 1900 'require'
  """
 
 
@@ -346,7 +346,7 @@ rule update_pgen_id:
     --make-pgen \
     --out {params.prefix} \
     --threads {resources.threads} \
-    --memory 90000 'require'
+    --memory 1900 'require'
 """
 
 
@@ -395,8 +395,9 @@ rule update_pgen_alleles:
     --pfile {params.pfile} \
     --out {params.out_file} \
     --threads {resources.threads} \
-    --memory 90000 'require'
+    --memory 1900 'require'
 """
+
 
 rule merge_filter_hq_variants_new_id_alleles_pgen:
     input:
@@ -456,5 +457,6 @@ rule header_info:
 plink2 \
 --pfile $PFILE \
 --pgen-info \
+--memory 3000 \
 --threads {resources.threads} &> {output.info}
 """
