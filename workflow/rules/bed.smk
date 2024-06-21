@@ -79,8 +79,7 @@ rule merge_filter_hq_variants_new_id_alleles_bed:
         """
  ls -1 {params.base_prefix} | cut -f1 -d"." > {output.file_list} \
  && plink2 \
- --pmerge-list {output.file_list} \
- --mode bfile \
+ --pmerge-list {output.file_list} bfile \
  --make-bed \
  --out {params.pmerge} \
  --threads {resources.threads} \
