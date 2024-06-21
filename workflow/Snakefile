@@ -31,7 +31,7 @@ rule list_rs:
         list_pseudo_biallelic_var=ws_path("pgen/pseudo_biallelic_var.txt"),
         list_pseudo_biallelic=ws_path("pgen/pseudo_biallelic.txt"),
     resources:
-        rountime=lambda wc, attempt: attempt * 60,
+        runtime=lambda wc, attempt: attempt * 60,
     shell:
         """
 tail -n +2 -q {input.directory_path} > {output.list_merge_rsid} && \
