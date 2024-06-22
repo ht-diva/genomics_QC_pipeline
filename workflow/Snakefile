@@ -277,9 +277,15 @@ rule merge_filter_hq_variants:
             chrom=[i for i in range(1, 23)],
         ),
     output:
-        ws_path("pgen/qc_recoded/impute_recoded_selected_sample_filter_hq_var_all.pgen"),
-        ws_path("pgen/qc_recoded/impute_recoded_selected_sample_filter_hq_var_all.pvar"),
-        ws_path("pgen/qc_recoded/impute_recoded_selected_sample_filter_hq_var_all.psam"),
+        pgen=ws_path(
+            "pgen/qc_recoded/impute_recoded_selected_sample_filter_hq_var_all.pgen"
+        ),
+        pvar=ws_path(
+            "pgen/qc_recoded/impute_recoded_selected_sample_filter_hq_var_all.pvar"
+        ),
+        psam=ws_path(
+            "pgen/qc_recoded/impute_recoded_selected_sample_filter_hq_var_all.psam"
+        ),
         file_list=ws_path("pgen/qc_recoded/merge_list.txt"),
     container:
         "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"

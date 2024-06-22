@@ -31,13 +31,13 @@ rule sync_header_info:
 rule sync_pfiles_qc_recoded_c:
     input:
         pgen_c=ws_path(
-            "pgen/qc_recoded/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.pgen"
+            "pgen/qc_recoded/impute_recoded_selected_sample_filter_hq_var_{chrom}.pgen"
         ),
         pvar_c=ws_path(
-            "pgen/qc_recoded/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.pvar"
+            "pgen/qc_recoded/impute_recoded_selected_sample_filter_hq_var_{chrom}.pvar"
         ),
         psam_c=ws_path(
-            "pgen/qc_recoded/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.psam"
+            "pgen/qc_recoded/impute_recoded_selected_sample_filter_hq_var_{chrom}.psam"
         ),
     output:
         touch(dest_path("pgen/.qc_recoded_{chrom}_delivery.done")),
@@ -55,13 +55,13 @@ rule sync_pfiles_qc_recoded_c:
 rule sync_pfiles_qc_recoded_all:
     input:
         pgen_a=ws_path(
-            "pgen/qc_recoded/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all.pgen"
+            "pgen/qc_recoded/impute_recoded_selected_sample_filter_hq_var_all.pgen"
         ),
         pvar_a=ws_path(
-            "pgen/qc_recoded/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all.pvar"
+            "pgen/qc_recoded/impute_recoded_selected_sample_filter_hq_var_all.pvar"
         ),
         psam_a=ws_path(
-            "pgen/qc_recoded/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all.psam"
+            "pgen/qc_recoded/impute_recoded_selected_sample_filter_hq_var_all.psam"
         ),
     output:
         touch(dest_path("pgen/.qc_recoded_all_delivery.done")),
