@@ -88,7 +88,7 @@ def get_final_output():
     if config.get("run").get("delivery"):
         final_output.append(dest_path("pgen/.tables_delivery.done")),
 
-        # final_output.append(dest_path("pgen/.qc_recoded_all_delivery.done")),
+        final_output.append(dest_path("pgen/.qc_recoded_all_delivery.done")),
         final_output.append(dest_path("pgen/.qc_recoded_harmonised_all_delivery.done")),
         final_output.append(dest_path("bed/.all_delivery.done")),
 
@@ -98,12 +98,12 @@ def get_final_output():
                 chrom=[i for i in range(1, 23)],
             )
         ),
-        # final_output.extend(
-        #     expand(
-        #         dest_path("pgen/.qc_recoded_{chrom}_delivery.done"),
-        #         chrom=[i for i in range(1, 23)],
-        #     )
-        # ),
+        final_output.extend(
+            expand(
+                dest_path("pgen/.qc_recoded_{chrom}_delivery.done"),
+                chrom=[i for i in range(1, 23)],
+            )
+        ),
         final_output.extend(
             expand(
                 dest_path("pgen/.qc_recoded_harmonised_{chrom}_delivery.done"),

@@ -8,7 +8,7 @@ rule sync_tables:
         recode=dest_path("pgen/recode_rsids.txt"),
         biallelic=dest_path("pgen/pseudo_biallelic.txt"),
     resources:
-        runtime=lambda wc, attempt: attempt * 10,
+        runtime=lambda wc, attempt: attempt * 90,
     shell:
         """
         rsync -rlptoDvz --chmod "D755,F644" {input.recode} {params.recode} && \
@@ -21,7 +21,7 @@ rule sync_header_info:
     output:
         touch(dest_path("pgen/.header_info_{chrom}.done")),
     resources:
-        runtime=lambda wc, attempt: attempt * 10,
+        runtime=lambda wc, attempt: attempt * 30,
     params:
         folder=dest_path("pgen/"),
     shell:
@@ -68,7 +68,7 @@ rule sync_pfiles_qc_recoded_all:
     params:
         folder=dest_path("pgen/qc_recoded/"),
     resources:
-        runtime=lambda wc, attempt: attempt * 90,
+        runtime=lambda wc, attempt: attempt * 120,
     shell:
         """mkdir -p {params.folder} && \
         rsync -rlptoDvz --chmod "D755,F644" {input.pgen_a} {params.folder} && \
@@ -116,7 +116,7 @@ rule sync_pfiles_qc_recoded_harmonised_all:
     params:
         folder=dest_path("pgen/qc_recoded_harmonised/"),
     resources:
-        runtime=lambda wc, attempt: attempt * 90,
+        runtime=lambda wc, attempt: attempt * 120,
     shell:
         """mkdir -p {params.folder} && \
         rsync -rlptoDvz --chmod "D755,F644" {input.pgen_a} {params.folder} && \
@@ -164,7 +164,7 @@ rule sync_bedfiles_all:
     params:
         folder=dest_path("bed/qc_recoded_harmonised/"),
     resources:
-        runtime=lambda wc, attempt: attempt * 90,
+        runtime=lambda wc, attempt: attempt * 120,
     shell:
         """mkdir -p {params.folder} && \
         rsync -rlptoDvz --chmod "D755,F644" {input.bed_a} {params.folder} && \
