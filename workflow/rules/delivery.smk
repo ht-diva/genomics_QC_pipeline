@@ -151,13 +151,13 @@ rule sync_bedfiles_c:
 rule sync_bedfiles_all:
     input:
         bed_a=ws_path(
-            "bed/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all.bed"
+            "bed/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all.bed"
         ),
         bim_a=ws_path(
-            "bed/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all.bim"
+            "bed/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all.bim"
         ),
         fam_a=ws_path(
-            "bed/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all.fam"
+            "bed/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all.fam"
         ),
     output:
         touch(dest_path("bed/.all_delivery.done")),
