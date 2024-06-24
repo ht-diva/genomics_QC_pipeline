@@ -86,10 +86,12 @@ def get_final_output():
     ),
 
     if config.get("run").get("delivery"):
-        final_output.append(dest_path("pgen/.tables_delivery.done")),
+        final_output.append(dest_path("README.txt")),
 
+        final_output.append(dest_path("pgen/.tables_delivery.done")),
         final_output.append(dest_path("pgen/.qc_recoded_all_delivery.done")),
         final_output.append(dest_path("pgen/.qc_recoded_harmonised_all_delivery.done")),
+
         final_output.append(dest_path("bed/.all_delivery.done")),
 
         final_output.extend(
