@@ -396,7 +396,7 @@ rule update_pgen_alleles:
         """
     paste <(zcat {params.table_mapping} | grep "False" | cut -f1 | cut -d":" -f1-4) <(zcat {params.table_mapping} | grep "False" | cut -f2 | cut -d":" -f3,4 | tr ":" "\t") <(zcat {params.table_mapping} | grep "False" | cut -f1 | cut -d":" -f3,4 | tr ":" "\t") > {params.mapping_table_right_alleles} &&
     plink2 \
-    --update-alleles {params.mapping_table_right_alleles} \
+    --ref-allele {params.mapping_table_right_alleles} 4 \
     --make-pgen \
     --pfile {params.pfile} \
     --out {params.out_file} \
@@ -448,6 +448,36 @@ rule merge_filter_hq_variants_new_id_alleles_pgen:
  --memory 90000 'require'
 """
 
+rule freq_new_id_alleles_pgen:
+    input:
+        ws_path(
+            "pgen/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all.pgen"
+        ),
+        ws_path(
+            "pgen/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all.pvar"
+        ),
+        ws_path(
+            "pgen/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all.psam"
+        ),
+    output:
+        ws_path(
+            "pgen/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all_freq"
+        ),
+    container:
+        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
+    resources:
+        runtime=lambda wc, attempt: attempt * 60,
+    params:
+        base_prefix=ws_path("pgen/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all"),
+
+    shell:
+        """
+plink2 --pfile {params.base_prefix} \
+ --freq \
+ --out {output} \
+ --threads {resources.threads} \
+ --memory 90000 'require'
+"""
 
 rule header_info:
     input:
