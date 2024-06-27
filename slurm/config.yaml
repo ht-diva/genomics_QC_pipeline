@@ -10,14 +10,14 @@ local-cores: 1
 cores: &cores 8
 latency-wait: 60
 keep-going: True
-rerun-incomplete: False
+rerun-incomplete: True
 printshellcmds: True
 scheduler: ilp
 
 default-resources:
     slurm_partition: cpuq
     # slurm_account: ${USER}
-    mem_mb: attempt * 512
+    mem_mb: attempt * 1024
     threads: 1
     runtime: attempt * 5
 set-resources:
@@ -33,10 +33,10 @@ set-resources:
       mem_mb: 102400 + attempt * 2048
       threads: *cores
     filter_var:
-      mem_mb: 102400 + attempt * 2048
+      mem_mb: 20480 + attempt * 2048
       threads: *cores
     create_bgen:
-      mem_mb: 102400 + attempt * 2048
+      mem_mb: 20480 + attempt * 2048
       threads: *cores
     qctool:
       mem_mb: 1024 + attempt * 1024
@@ -45,8 +45,23 @@ set-resources:
       mem_mb: 2048 + attempt * 2048
       threads: *cores
     filter_hq_variants:
-      mem_mb: 102400 + attempt * 2048
+      mem_mb: 1024 + attempt * 1024
       threads: *cores
     merge_filter_hq_variants:
+      mem_mb: 102400 + attempt * 2048
+      threads: *cores
+    update_pgen_id:
+      mem_mb: 1024 + attempt * 1024
+      threads: *cores
+    update_pgen_alleles:
+      mem_mb: 1024 + attempt * 1024
+      threads: *cores
+    merge_filter_hq_variants_new_id_alleles_pgen:
+      mem_mb: 102400 + attempt * 2048
+      threads: *cores
+    pgen2bed:
+      mem_mb: 1024 + attempt * 1024
+      threads: *cores
+    merge_filter_hq_variants_new_id_alleles_bed:
       mem_mb: 102400 + attempt * 2048
       threads: *cores
