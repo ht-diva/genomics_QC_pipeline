@@ -68,7 +68,7 @@ The output is written to the path defined by the **workspace_path** variable in 
 
 13. **pgen2bed:** <br />
 *Purpose:* Convert pgen file into bed format. Set hard-call-threshold equal to 0.49999999. <br />
-*Output:* A bed file with harmonised alleles and without missing dosage.
+*Output:* A bed file with harmonised alleles and minimized missing dosage. <br />
 
 14. **merge_filter_hq_variants_new_id_alleles_bed:** <br />
 *Purpose:* Merge all the bed files from the previous step into a final single bed file. <br />
