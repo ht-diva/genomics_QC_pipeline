@@ -35,8 +35,8 @@ The output is written to the path defined by the **workspace_path** variable in 
 *Output:* A cleaned dataset with high-quality variants and samples. <br />
 
 5. **create_bgen:** <br />
-*Purpose:* Convert the filtered data from the previous steps into BGEN format, a commonly used format for storing large-scale genotype data. <br />
-*Output:* A BGEN file containing the cleaned genotype data. <br />
+*Purpose:* Convert the filtered data from the previous steps into bgen format, a commonly used format for storing large-scale genotype data. <br />
+*Output:* A bgen file containing the cleaned genotype data. <br />
 
 6. **qctool:** <br />
 *Purpose:* Compute SNP statistics using qctool, ensuring the quality of the variants. <br />
