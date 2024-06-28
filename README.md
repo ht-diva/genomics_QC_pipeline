@@ -56,19 +56,19 @@ The output is written to the path defined by the **workspace_path** variable in 
 
 10. **update_pgen_id:** <br />
 *Purpose:* Update the variant IDs in the pgen file to the format chr:pos:A0:A1, with A0 and A1 in alphabetical order. <br />
-*Output:* An updated pgen file with harmonized IDs. <br />
+*Output:* An updated pgen file with harmonised IDs. <br />
 
 11. **update_pgen_alleles:** <br />
 *Purpose:* Harmonize the alleles in the pgen file to match the new IDs. <br />
-*Output:* A pgen file with harmonized alleles. <br />
+*Output:* A pgen file with harmonised alleles. <br />
 
 12. **merge_filter_hq_variants_new_id_alleles_pgen:** <br />
 *Purpose:* Merge all the pgen files from the previous step into a final single pgen file. <br />
-*Output:* A final combined pgen file with harmonized IDs and alleles, ready for pQTL analysis. <br />
+*Output:* A final combined pgen file with harmonised IDs and alleles, ready for pQTL analysis. <br />
 
 13. **pgen2bed:** <br />
 *Purpose:* Convert pgen file into bed format. Set hard-call-threshold equal to 0.49999999. <br />
-*Output:* A bed file with harmonized alleles and without missing dosage.
+*Output:* A bed file with harmonised alleles and without missing dosage.
 
 14. **merge_filter_hq_variants_new_id_alleles_bed:** <br />
 *Purpose:* Merge all the bed files from the previous step into a final single bed file. <br />
