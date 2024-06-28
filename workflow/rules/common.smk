@@ -70,6 +70,14 @@ def get_final_output():
     final_output.extend(
         expand(
             ws_path(
+                "pgen/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all_freq.{ext}"
+            ),
+            ext=["afreq", "log"],
+        )
+    ),
+    final_output.extend(
+        expand(
+            ws_path(
                 "bed/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.{ext}"
             ),
             chrom=[i for i in range(1, 23)],
