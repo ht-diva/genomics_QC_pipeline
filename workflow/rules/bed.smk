@@ -34,6 +34,7 @@ rule pgen2bed:
         """
         plink2 \
             --pfile {params.pfile} \
+            --hard-call-threshold 0.49999999 \
             --make-bed  \
             --alt1-allele 'force' {params.pfile}.pvar 4 3 \
             --out {params.prefix} \

@@ -23,7 +23,7 @@ The output is written to the path defined by the **workspace_path** variable in 
 *Output:* Two files – one containing all rsIDs and the other containing pseudo biallelic variants.<br />
 
 2. **recode_pgen:** <br />
-*Purpose:* Replace the IDs in the imputed pgen file with a new format: chr:pos:ref <br />
+*Purpose:* Replace the IDs in the imputed pgen file with a new format: chr:pos:ref:alt. <br />
 *Output:* An updated pgen file with the new ID format. <br />
 
 3. **selected_sample:** <br />
@@ -65,3 +65,18 @@ The output is written to the path defined by the **workspace_path** variable in 
 12. **merge_filter_hq_variants_new_id_alleles_pgen:** <br />
 *Purpose:* Merge all the pgen files from the previous step into a final single pgen file. <br />
 *Output:* A final combined pgen file with harmonized IDs and alleles, ready for pQTL analysis. <br />
+
+13. **pgen2bed:** <br />
+*Purpose:* Convert pgen file into bed format. Set hard-call-threshold equal to 0.49999999. <br />
+*Output:* A bed file with harmonized alleles and without missing dosage.
+
+14. **merge_filter_hq_variants_new_id_alleles_bed:** <br />
+*Purpose:* Merge all the bed files from the previous step into a final single bed file. <br />
+*Output:* A final combined bed file. <br />
+
+## Output
+1. pgen folder (contains raw pgen files with the new IDs format: chr:pos:ref:alt) <br />
+   - qc_recoded subfolder (contains pgen files that have been processed through quality control and recoding steps but not yet harmonised.)
+   - qc_recoded_harmonised subfolder (contains pgen files that have been both quality controlled, recoded, and harmonised.)
+2. bed folder
+   - qc_recoded_harmonised subfolder (contains bed files that have been harmonised.)
