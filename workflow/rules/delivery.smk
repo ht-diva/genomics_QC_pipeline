@@ -123,6 +123,20 @@ rule sync_pfiles_qc_recoded_harmonised_all:
         rsync -rlptoDvz --chmod "D755,F644" {input.pvar_a} {params.folder} && \
         rsync -rlptoDvz --chmod "D755,F644" {input.psam_a} {params.folder} """
 
+rule sync_pfiles_qc_recoded_harmonised_all_freq:
+    input:
+        afreq=ws_path(
+            "pgen/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all_freq.afreq"
+        ),
+    output:
+        touch(dest_path("pgen/.qc_recoded_harmonised_all_freq_delivery.done")),
+    params:
+        folder=dest_path("pgen/qc_recoded_harmonised/"),
+    resources:
+        runtime=lambda wc, attempt: attempt * 120,
+    shell:
+        """mkdir -p {params.folder} && \
+        rsync -rlptoDvz --chmod "D755,F644" {input.afreq} {params.folder} """
 
 rule sync_bedfiles_c:
     input:
