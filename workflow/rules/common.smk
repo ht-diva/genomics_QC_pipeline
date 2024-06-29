@@ -99,6 +99,7 @@ def get_final_output():
         final_output.append(dest_path("pgen/.tables_delivery.done")),
         final_output.append(dest_path("pgen/.qc_recoded_all_delivery.done")),
         final_output.append(dest_path("pgen/.qc_recoded_harmonised_all_delivery.done")),
+        final_output.append(dest_path("pgen/.qc_recoded_harmonised_all_freq_delivery.done")),
 
         final_output.append(dest_path("bed/.all_delivery.done")),
 
