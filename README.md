@@ -1,6 +1,6 @@
 # genomics_QC_pipeline
 The genomic QC pipeline is designed to clean and prepare imputed genotype data for pQTL analysis.
-All the rules were based on Alessia Mapelli’s work: [https://github.com/ht-diva/pqtl-believe-interval/blob/main/Script_QC_INTERVAL_genomics.R](stepB)
+All the rules were based on Alessia Mapelli’s work: [https://github.com/ht-diva/pqtl-believe-interval/blob/main/Script_QC_INTERVAL_genomics.R]
 
 
 ## Requirements
