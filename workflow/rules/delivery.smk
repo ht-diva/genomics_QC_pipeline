@@ -123,6 +123,7 @@ rule sync_pfiles_qc_recoded_harmonised_all:
         rsync -rlptoDvz --chmod "D755,F644" {input.pvar_a} {params.folder} && \
         rsync -rlptoDvz --chmod "D755,F644" {input.psam_a} {params.folder} """
 
+
 rule sync_pfiles_qc_recoded_harmonised_all_freq:
     input:
         afreq=ws_path(
@@ -137,6 +138,7 @@ rule sync_pfiles_qc_recoded_harmonised_all_freq:
     shell:
         """mkdir -p {params.folder} && \
         rsync -rlptoDvz --chmod "D755,F644" {input.afreq} {params.folder} """
+
 
 rule sync_bedfiles_c:
     input:

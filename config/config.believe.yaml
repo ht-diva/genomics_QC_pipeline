@@ -1,0 +1,17 @@
+run:
+  delivery: False
+
+# paths
+workspace_path: "results"
+pgen_src_path: '/exchange/healthds/pQTL/BELIEVE/Genetic_QC_files'
+pgen_template: 'chr{chrom}.pgen'
+pvar_template: 'chr{chrom}.pvar'
+dest_path: '/exchange/healthds/pQTL/BELIEVE/Genetic_QC_files/'
+fam_path: '/exchange/healthds/pQTL/BELIEVE/Genetic_QC_files/BELIEVE_genotype_final_bed_123456_withoutPCoutliers_mac.fam'
+mapping_table: '/project/cdh/believe/results/snp_mapping/table.snp_mapping.tsv.gz'
+
+plink2_dict:
+  mind: 0.1
+  geno: 0.1
+  hwe: 1e-15
+  mac: 10

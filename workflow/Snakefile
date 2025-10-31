@@ -448,6 +448,7 @@ rule merge_filter_hq_variants_new_id_alleles_pgen:
  --memory 90000 'require'
 """
 
+
 rule freq_new_id_alleles_pgen:
     input:
         ws_path(
@@ -471,9 +472,12 @@ rule freq_new_id_alleles_pgen:
     resources:
         runtime=lambda wc, attempt: attempt * 60,
     params:
-        base_prefix=ws_path("pgen/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all"),
-        out_prefix=ws_path("pgen/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all_freq"),
-
+        base_prefix=ws_path(
+            "pgen/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all"
+        ),
+        out_prefix=ws_path(
+            "pgen/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all_freq"
+        ),
     shell:
         """
 plink2 --pfile {params.base_prefix} \
@@ -482,6 +486,7 @@ plink2 --pfile {params.base_prefix} \
  --threads {resources.threads} \
  --memory 90000 'require'
 """
+
 
 rule header_info:
     input:

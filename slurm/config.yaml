@@ -68,4 +68,3 @@ set-resources:
     freq_new_id_alleles_pgen:
       mem_mb: 102400 + attempt * 2048
       threads: *cores
-
