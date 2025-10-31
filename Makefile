@@ -57,7 +57,7 @@ rerun:
 	$(BASE_CMD) --rerun-incomplete
 
 unlock:
-    @if [ -z "${CONDA_DEFAULT_ENV}" ] || [ "${CONDA_DEFAULT_ENV}" != "${ENV_NAME}" ]; then \
+	@if [ -z "${CONDA_DEFAULT_ENV}" ] || [ "${CONDA_DEFAULT_ENV}" != "${ENV_NAME}" ]; then \
         echo "Activating conda environment: ${ENV_NAME}"; \
 		$(CONDA_ACTIVATE) ${ENV_NAME}; \
 	fi; \
