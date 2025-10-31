@@ -1,71 +1,96 @@
-# --- Variables ---------------------------------------------------------------
-# Common Snakemake command parts
+# ----------------------------------------------------------------------
+#  Project handling
+# ----------------------------------------------------------------------
+# Default project (used if no .project file exists)
+DEFAULT_PROJECT ?= interval
+
+# .project file – contains the name of the active project
+PROJECT_FILE := .project
+
+# Resolve the active project:
+#   1️⃣ If the file exists, read its contents.
+#   2️⃣ Otherwise fall back to DEFAULT_PROJECT.
+PROJECT := $(or $(shell cat $(PROJECT_FILE) 2>/dev/null),$(DEFAULT_PROJECT))
+
+# Full config‑file path derived from the project name
+CONFIGFILE := config/config.$(PROJECT).yaml
+
+# ----------------------------------------------------------------------
+#  Common Snakemake command parts
+# ----------------------------------------------------------------------
 SNAKEFILE = workflow/Snakefile
 PROFILE   = --profile slurm
 SDM       = --sdm conda
-BASE_CMD  = snakemake $(PROFILE) $(SDM) --snakefile $(SNAKEFILE)
-ENV_NAME  = /exchange/healthds/software/envs/snakemake
-CONDA_ACTIVATE=source $$(conda info --base)/etc/profile.d/conda.sh ; conda activate ; conda activate
+BASE_CMD  = snakemake $(PROFILE) $(SDM) --snakefile $(SNAKEFILE) --configfile $(CONFIGFILE)
 
-
-# Config files for the different runs
-# use the --configfile command line argument to overwrite values from the configfile statement.
-# command line overwrites the same key of the configfile statement.
-CONFIG_BELIEVE  = config/config.believe.yaml
-CONFIG_INTERVAL = config/config.interval.yaml
-
-# Targets list
+# Targets list (unchanged)
 TARGETS = dependencies dag run unlock
 
-# --- Top level ---------------------------------------------------------------
+# ----------------------------------------------------------------------
+#  Top level
+# ----------------------------------------------------------------------
 all:
 	@echo "Try one of: ${TARGETS}"
+	@echo "Current project: $(PROJECT) (config → $(CONFIGFILE))"
 
-# --- DAG --------------------------------------------------------------------
+# ----------------------------------------------------------------------
+#  DAG
+# ----------------------------------------------------------------------
 dag:
 	snakemake --dag | dot -Tsvg > dag.svg
 
-# --- Environment ------------------------------------------------------------
+# ----------------------------------------------------------------------
+#  Environment
+# ----------------------------------------------------------------------
 dependencies:
 	mamba env update -n snakemake --file environment.yml
 
 dev-dependencies: dependencies
 	mamba env update -n snakemake --file environment_dev.yml
 
-# --- Dry‑run ---------------------------------------------------------------
+# ----------------------------------------------------------------------
+#  Dry‑run
+# ----------------------------------------------------------------------
 dry-run:
 	$(BASE_CMD) --dry-run
 
-dry-run-believe:
-	$(BASE_CMD) --dry-run --configfile $(CONFIG_BELIEVE)
-
-dry-run-interval:
-	$(BASE_CMD) --dry-run --configfile $(CONFIG_INTERVAL)
-
-# --- Run --------------------------------------------------------------------
+# ----------------------------------------------------------------------
+#  Run
+# ----------------------------------------------------------------------
 run:
 	$(BASE_CMD)
 
-run-believe:
-	$(BASE_CMD) --configfile $(CONFIG_BELIEVE)
-
-run-interval:
-	$(BASE_CMD) --configfile $(CONFIG_INTERVAL)
-
-# --- Misc -------------------------------------------------------------------
 rerun:
 	$(BASE_CMD) --rerun-incomplete
 
 unlock:
-	@if [ -z "${CONDA_DEFAULT_ENV}" ] || [ "${CONDA_DEFAULT_ENV}" != "${ENV_NAME}" ]; then \
-        echo "Activating conda environment: ${ENV_NAME}"; \
-		$(CONDA_ACTIVATE) ${ENV_NAME}; \
-	fi; \
-	snakemake --unlock
+	snakemake --unlock --configfile $(CONFIGFILE)
 
 dockerfile_:
-	snakemake --containerize --snakefile $(SNAKEFILE) > Dockerfile
+	snakemake --containerize --snakefile $(SNAKEFILE) > DockerFile
 
 pre-commit:
 	if [ ! -f .git/hooks/pre-commit ]; then pre-commit install; fi
 	pre-commit run --all-files
+
+# ----------------------------------------------------------------------
+#  Project helpers – create/override the .project file
+# ----------------------------------------------------------------------
+project-interval:
+	@echo "interval" > $(PROJECT_FILE)
+	@echo "✅ Project set to 'interval' (config → $(CONFIGFILE))"
+
+project-believe:
+	@echo "believe" > $(PROJECT_FILE)
+	@echo "✅ Project set to 'believe' (config → $(CONFIGFILE))"
+
+project-%:
+	@echo "$*" > $(PROJECT_FILE)
+	@echo "✅ Project set to '$*' (config → $(CONFIGFILE))"
+
+# ----------------------------------------------------------------------
+#  Clean up helper (optional)
+# ----------------------------------------------------------------------
+clean-project:
+	@rm -f $(PROJECT_FILE)
+	@echo "🗑️  Removed $(PROJECT_FILE); next run will fall back to DEFAULT_PROJECT='$(DEFAULT_PROJECT)'"
