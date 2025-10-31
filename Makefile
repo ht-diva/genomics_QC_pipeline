@@ -4,6 +4,9 @@ SNAKEFILE = workflow/Snakefile
 PROFILE   = --profile slurm
 SDM       = --sdm conda
 BASE_CMD  = snakemake $(PROFILE) $(SDM) --snakefile $(SNAKEFILE)
+ENV_NAME  = /exchange/healthds/software/envs/snakemake
+CONDA_ACTIVATE=source $$(conda info --base)/etc/profile.d/conda.sh ; conda activate ; conda activate
+
 
 # Config files for the different runs
 # use the --configfile command line argument to overwrite values from the configfile statement.
@@ -54,6 +57,10 @@ rerun:
 	$(BASE_CMD) --rerun-incomplete
 
 unlock:
+    @if [ -z "${CONDA_DEFAULT_ENV}" ] || [ "${CONDA_DEFAULT_ENV}" != "${ENV_NAME}" ]; then \
+        echo "Activating conda environment: ${ENV_NAME}"; \
+		$(CONDA_ACTIVATE) ${ENV_NAME}; \
+	fi; \
 	snakemake --unlock
 
 dockerfile_:
