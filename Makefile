@@ -20,8 +20,7 @@ CONFIGFILE := config/config.$(PROJECT).yaml
 # ----------------------------------------------------------------------
 SNAKEFILE = workflow/Snakefile
 PROFILE   = --profile slurm
-SDM       = --sdm conda
-BASE_CMD  = snakemake $(PROFILE) $(SDM) --snakefile $(SNAKEFILE) --configfile $(CONFIGFILE)
+BASE_CMD  = snakemake $(PROFILE) --snakefile $(SNAKEFILE) --configfile $(CONFIGFILE)
 
 # Targets list (unchanged)
 TARGETS = dependencies dag run unlock
@@ -52,7 +51,7 @@ dev-dependencies: dependencies
 #  Dry‑run
 # ----------------------------------------------------------------------
 dry-run:
-	$(BASE_CMD) --dry-run
+	$(BASE_CMD) --sdm conda --dry-run
 
 # ----------------------------------------------------------------------
 #  Run
