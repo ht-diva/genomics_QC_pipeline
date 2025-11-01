@@ -1,2 +1,5 @@
 /.snakemake/
 .idea
+results/
+.project
+*.log

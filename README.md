@@ -12,8 +12,24 @@ see also [environment.yml](environment.yml) and [Makefile](Makefile)
 
 * git clone https://github.com/ht-diva/genomics_QC_pipeline.git
 * cd genomics_QC_pipeline
-* adapt the [submit.sbatch](submit.sbatch) and [config/config.yaml](config/config.yaml) files to your environment
-* sbatch submit.sbatch
+
+**Choosing a project**
+
+The pipeline can be run with different configuration sets (e.g., `interval`, `believe`, …).
+
+Set the active project by creating/updating the hidden `.project` file **or** by using one of the Makefile helpers:
+  ```bash
+  make project-interval   # uses config/config.interval.yaml
+  make project-believe    # uses config/config.believe.yaml
+  make project-<name>     # any custom name matching config/config.<name>.yaml
+  ```
+The selected project is shown when you run `make` (it prints “Current project: …”).
+
+Then run the pipe with:
+  ```bash
+  sbatch submit.sbatch
+  ```
+
 
 The output is written to the path defined by the **workspace_path** variable in the config.yaml file. By default, this path is `./results`.
 
@@ -75,8 +91,8 @@ The output is written to the path defined by the **workspace_path** variable in 
 *Output:* A final combined bed file. <br />
 
 ## Output
-1. pgen folder (contains raw pgen files with the new IDs format: chr:pos:ref:alt) <br />
+1. **pgen** folder (contains raw pgen files with the new IDs format: chr:pos:ref:alt) <br />
    - qc_recoded subfolder (contains pgen files that have been processed through quality control and recoding steps but not yet harmonised.)
    - qc_recoded_harmonised subfolder (contains pgen files that have been both quality controlled, recoded, and harmonised.)
-2. bed folder
+2. **bed** folder
    - qc_recoded_harmonised subfolder (contains bed files that have been harmonised.)
