@@ -167,10 +167,11 @@ rule create_bgen:
         prefix=ws_path(
             "pgen/qc_recoded/bgen_impute_recoded_selected_sample_filtered_var_chr_{chrom}"
         ),
+        export_output_fmt=config.get("plink2_dict").get("export_output_fmt"),
     shell:
         """plink2 \
  --pfile {params.pfile} \
- --export bgen-1.2 \
+ --export {params.export_output_fmt} \
  --out {params.prefix} \
  --threads {resources.threads} \
  --memory 19000 'require'
@@ -195,7 +196,7 @@ rule qctool:
 -g {input} \
 -snp-stats \
 -osnp {output} \
--threads {resources.threads} \
+-threads {resources.threads}
     """
 
 
