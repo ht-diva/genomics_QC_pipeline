@@ -167,10 +167,11 @@ rule create_bgen:
         prefix=ws_path(
             "pgen/qc_recoded/bgen_impute_recoded_selected_sample_filtered_var_chr_{chrom}"
         ),
+        export_output_fmt=config.get("plink2_dict").get("export_output_fmt"),
     shell:
         """plink2 \
  --pfile {params.pfile} \
- --export bgen-1.2 \
+ --export {params.export_output_fmt} \
  --out {params.prefix} \
  --threads {resources.threads} \
  --memory 19000 'require'
@@ -195,7 +196,7 @@ rule qctool:
 -g {input} \
 -snp-stats \
 -osnp {output} \
--threads {resources.threads} \
+-threads {resources.threads}
     """
 
 
@@ -448,6 +449,7 @@ rule merge_filter_hq_variants_new_id_alleles_pgen:
  --memory 90000 'require'
 """
 
+
 rule freq_new_id_alleles_pgen:
     input:
         ws_path(
@@ -471,9 +473,12 @@ rule freq_new_id_alleles_pgen:
     resources:
         runtime=lambda wc, attempt: attempt * 60,
     params:
-        base_prefix=ws_path("pgen/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all"),
-        out_prefix=ws_path("pgen/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all_freq"),
-
+        base_prefix=ws_path(
+            "pgen/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all"
+        ),
+        out_prefix=ws_path(
+            "pgen/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all_freq"
+        ),
     shell:
         """
 plink2 --pfile {params.base_prefix} \
@@ -482,6 +487,7 @@ plink2 --pfile {params.base_prefix} \
  --threads {resources.threads} \
  --memory 90000 'require'
 """
+
 
 rule header_info:
     input:
