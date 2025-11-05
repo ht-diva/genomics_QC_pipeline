@@ -397,7 +397,7 @@ rule update_pgen_alleles:
         """
     paste <(zcat {params.table_mapping} | grep "False" | cut -f1 | cut -d":" -f1-4) <(zcat {params.table_mapping} | grep "False" | cut -f2 | cut -d":" -f3,4 | tr ":" "\t") <(zcat {params.table_mapping} | grep "False" | cut -f1 | cut -d":" -f3,4 | tr ":" "\t") > {params.mapping_table_right_alleles} &&
     plink2 \
-    --ref-allele {params.mapping_table_right_alleles} 4 \
+    --ref-allele force {params.mapping_table_right_alleles} 4 \
     --make-pgen \
     --pfile {params.pfile} \
     --out {params.out_file} \
