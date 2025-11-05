@@ -3,7 +3,7 @@ run:
 
 # paths
 workspace_path: "results"
-pgen_src_path: '/exchange/healthds/pQTL/BELIEVE/Genetic_QC_files/HDS_by_chr'
+pgen_src_path: '/exchange/healthds/pQTL/BELIEVE/Genetic_QC_files/HDS_BELIEVE_final_HDS_by_chr'
 pgen_template: 'chr{chrom}.pgen'
 pvar_template: 'chr{chrom}.pvar'
 dest_path: '/exchange/healthds/pQTL/BELIEVE/Genetic_QC_files/harmonized'
