@@ -41,9 +41,50 @@ awk -v OFS="\t" 'BEGIN {{print "SNPID", "rsID", "CHR", "POS", "NEA", "EA"}} {{pr
 """
 
 
+rule get_mirror_snps:
+    input:
+        get_pvar(),
+    output:
+        ws_path("pgen/mirror_snps_{chrom}.txt"),
+    container:
+        "docker:ghcr.io/ht-diva/containers/python_ds:00d5ac"
+    resources:
+        runtime=lambda wc, attempt: attempt * 60,
+    shell:
+        "python workflow/scripts/get_mirror_snps.py "
+        "--filename {input} "
+        "--column ID "
+
+
+rule filter_mirror_snps:
+    input:
+        rules.get_mirror_snps.output,
+        get_pgen(),
+    output:
+        ws_path("pgen/qc_recoded/impute_filtered_mirror_snps_{chrom}.pgen"),
+        ws_path("pgen/qc_recoded/impute_filtered_mirror_snps_{chrom}.pvar"),
+        ws_path("pgen/qc_recoded/impute_filtered_mirror_snps_{chrom}.psam"),
+    container:
+        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
+    resources:
+        runtime=lambda wc, attempt: attempt * 60,
+    params:
+        pfile=get_pgen(stem=True),
+        prefix=ws_path("pgen/qc_recoded/impute_filtered_mirror_snps_{chrom}"),
+    shell:
+        """plink2 \
+ --pfile {params.pfile} \
+ --extract {input[0]} \
+ --make-pgen \
+ --out {params.prefix} \
+ --threads {resources.threads} \
+ --memory 1900 'require'
+ """
+
+
 rule recode_pgen:
     input:
-        get_pgen(),
+        rules.filter_mirror_snps.output,
     output:
         ws_path("pgen/qc_recoded/impute_dedup_recoded_{chrom}.pgen"),
         ws_path("pgen/qc_recoded/impute_dedup_recoded_{chrom}.pvar"),

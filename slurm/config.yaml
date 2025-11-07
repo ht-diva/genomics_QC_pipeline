@@ -21,6 +21,12 @@ default-resources:
     threads: 1
     runtime: attempt * 5
 set-resources:
+    get_mirror_snps:
+      mem_mb: 2048 + attempt * 2048
+      threads: *cores
+    filter_mirror_snps:
+      mem_mb: 1024 + attempt * 1024
+      threads: *cores
     recode_pgen:
         mem_mb: 102400 + attempt * 2048
         threads: *cores
