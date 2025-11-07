@@ -50,10 +50,13 @@ rule get_mirror_snps:
         "docker:ghcr.io/ht-diva/containers/python_ds:00d5ac"
     resources:
         runtime=lambda wc, attempt: attempt * 60,
+    params:
+        out=ws_path("pgen/mirror_snps_{chrom}.txt"),
     shell:
         "python workflow/scripts/get_mirror_snps.py "
         "--filename {input} "
         "--column ID "
+        "--output_file {params.out}"
 
 
 rule filter_mirror_snps:
