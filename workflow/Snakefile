@@ -54,7 +54,7 @@ rule get_mirror_snps:
         out=ws_path("pgen/mirror_snps_{chrom}.txt"),
     shell:
         "python workflow/scripts/get_mirror_snps.py "
-        "--filename {input} "
+        "--input_file {input} "
         "--column ID "
         "--output_file {params.out}"
 
