@@ -47,7 +47,7 @@ rule get_mirror_snps:
     output:
         ws_path("pgen/mirror_snps_{chrom}.txt"),
     container:
-        "docker://ghcr.io/ht-diva/containers/python_ds:00d5ac"
+        "docker://ghcr.io/ht-diva/containers/python_ds:406993"
     resources:
         runtime=lambda wc, attempt: attempt * 60,
     params:
