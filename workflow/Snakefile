@@ -98,7 +98,7 @@ rule recode_pgen:
         runtime=lambda wc, attempt: attempt * 60,
     params:
         prefix=ws_path("pgen/qc_recoded/impute_dedup_recoded_{chrom}"),
-        pfile=get_pgen(stem=True),
+        pfile=ws_path("pgen/qc_recoded/impute_filtered_mirror_snps_{chrom}"),
     shell:
         """plink2 \
 --pfile {params.pfile} \
