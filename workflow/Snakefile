@@ -77,7 +77,7 @@ rule filter_mirror_snps:
     shell:
         """plink2 \
  --pfile {params.pfile} \
- --extract {input[0]} \
+ --exclude {input[0]} \
  --make-pgen \
  --out {params.prefix} \
  --threads {resources.threads} \
