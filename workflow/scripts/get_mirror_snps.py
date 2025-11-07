@@ -5,7 +5,7 @@ from pathlib import Path
 @click.command()
 @click.option('--input', type=click.Path(exists=True), required=True, help='Path to the TSV file (can be gzipped)')
 @click.option('--column', required=True, help='Name of the column containing SNPIDs')
-@click.option('--output_file', type=click.Path, required=True, help='Path to the output file')
+@click.option('--output_file', required=True, help='Path to the output file')
 def main(input_file, column, output_file):
     """Find mirror SNPIDs in a TSV file and write results to a file."""
 
