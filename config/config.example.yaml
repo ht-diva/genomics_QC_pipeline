@@ -1,14 +1,17 @@
 run:
   delivery: False
+  filter_problematic_snps: True
+  filter_by_INFO_score: True
 
 # paths
 workspace_path: "results"
-pgen_src_path: ''
+pgen_src_path: 'example'
 pgen_template: 'chr{chrom}.pgen'
 pvar_template: 'chr{chrom}.pvar'
 dest_path: '/exchange/healthds/pQTL/'
 fam_path: ''
 mapping_table: ''
+problematic_snps_path: ''
 
 plink2_dict:
   mind: 0.1
@@ -16,3 +19,5 @@ plink2_dict:
   hwe: 1e-15
   mac: 10
   export_output_fmt: "bgen-1.2"
+
+INFO_score: "0.7"

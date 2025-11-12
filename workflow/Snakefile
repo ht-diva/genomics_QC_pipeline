@@ -5,7 +5,7 @@ from pathlib import Path
 min_version("8.4.1")
 
 
-configfile: "config/config.yaml"
+configfile: "config/config.example.yaml"
 
 
 include: "rules/common.smk"
@@ -24,7 +24,7 @@ rule all:
 
 rule list_rs:
     input:
-        directory_path=expand(get_pvar(), chrom=[i for i in range(1, 23)]),
+        directory_path=expand(get_pvar(), chrom=get_chromosomes()),
     output:
         list_merge_rsid=ws_path("pgen/merge_rsids.txt"),
         list_recode_rsid=ws_path("pgen/recode_rsids.txt"),
@@ -45,18 +45,16 @@ rule get_mirror_snps:
     input:
         get_pvar(),
     output:
-        ws_path("pgen/mirror_snps_{chrom}.txt"),
+        ws_path("pgen/filtering/mirror_snps_{chrom}.txt"),
     container:
         "docker://ghcr.io/ht-diva/containers/python_ds:406993"
     resources:
         runtime=lambda wc, attempt: attempt * 60,
-    params:
-        out=ws_path("pgen/mirror_snps_{chrom}.txt"),
     shell:
         "python workflow/scripts/get_mirror_snps.py "
         "--input_file {input} "
         "--column ID "
-        "--output_file {params.out}"
+        "--output_file {output}"
 
 
 rule filter_mirror_snps:
@@ -64,16 +62,16 @@ rule filter_mirror_snps:
         rules.get_mirror_snps.output,
         get_pgen(),
     output:
-        ws_path("pgen/qc_recoded/impute_filtered_mirror_snps_{chrom}.pgen"),
-        ws_path("pgen/qc_recoded/impute_filtered_mirror_snps_{chrom}.pvar"),
-        ws_path("pgen/qc_recoded/impute_filtered_mirror_snps_{chrom}.psam"),
+        temp(ws_path("pgen/filtering/impute_filtered_mirror_snps_{chrom}.pgen")),
+        temp(ws_path("pgen/filtering/impute_filtered_mirror_snps_{chrom}.pvar")),
+        temp(ws_path("pgen/filtering/impute_filtered_mirror_snps_{chrom}.psam")),
     container:
         "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
     resources:
         runtime=lambda wc, attempt: attempt * 60,
     params:
         pfile=get_pgen(stem=True),
-        prefix=ws_path("pgen/qc_recoded/impute_filtered_mirror_snps_{chrom}"),
+        prefix=ws_path("pgen/filtering/impute_filtered_mirror_snps_{chrom}"),
     shell:
         """plink2 \
  --pfile {params.pfile} \
@@ -85,9 +83,39 @@ rule filter_mirror_snps:
  """
 
 
-rule recode_pgen:
+rule filter_problematic_snps:
     input:
         rules.filter_mirror_snps.output,
+    output:
+        temp(ws_path("pgen/filtering/filtered_problematic_snps_{chrom}.pgen")),
+        temp(ws_path("pgen/filtering/filtered_problematic_snps_{chrom}.pvar")),
+        temp(ws_path("pgen/filtering/filtered_problematic_snps_{chrom}.psam")),
+    container:
+        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
+    resources:
+        runtime=lambda wc, attempt: attempt * 60,
+    params:
+        pfile=rules.filter_mirror_snps.params.prefix,
+        prefix=ws_path("pgen/filtering/filtered_problematic_snps_{chrom}"),
+        problematic_snps=config.get("problematic_snps_path"),
+    shell:
+        """plink2 \
+ --pfile {params.pfile} \
+ --exclude {params.problematic_snps} \
+ --make-pgen \
+ --out {params.prefix} \
+ --threads {resources.threads} \
+ --memory 1900 'require'
+ """
+
+
+rule recode_pgen:
+    input:
+        branch(
+            lookup(dpath="run/filter_problematic_snps", within=config),
+            then=rules.filter_problematic_snps.output,
+            otherwise=rules.filter_mirror_snps.output,
+        ),
     output:
         ws_path("pgen/qc_recoded/impute_dedup_recoded_{chrom}.pgen"),
         ws_path("pgen/qc_recoded/impute_dedup_recoded_{chrom}.pvar"),
@@ -98,7 +126,11 @@ rule recode_pgen:
         runtime=lambda wc, attempt: attempt * 60,
     params:
         prefix=ws_path("pgen/qc_recoded/impute_dedup_recoded_{chrom}"),
-        pfile=ws_path("pgen/qc_recoded/impute_filtered_mirror_snps_{chrom}"),
+        pfile=branch(
+            lookup(dpath="run/filter_problematic_snps", within=config),
+            then=ws_path("pgen/filtering/filtered_problematic_snps_{chrom}"),
+            otherwise=ws_path("pgen/filtering/impute_filtered_mirror_snps_{chrom}"),
+        ),
     shell:
         """plink2 \
 --pfile {params.pfile} \
@@ -113,9 +145,7 @@ rule recode_pgen:
 
 rule selected_sample:
     input:
-        ws_path("pgen/qc_recoded/impute_dedup_recoded_{chrom}.pgen"),
-        ws_path("pgen/qc_recoded/impute_dedup_recoded_{chrom}.pvar"),
-        ws_path("pgen/qc_recoded/impute_dedup_recoded_{chrom}.psam"),
+        rules.recode_pgen.output,
     output:
         ws_path("pgen/qc_recoded/impute_recoded_selected_sample_{chrom}.pgen"),
         ws_path("pgen/qc_recoded/impute_recoded_selected_sample_{chrom}.pvar"),
@@ -143,9 +173,7 @@ rule selected_sample:
 
 rule filter_var:
     input:
-        ws_path("pgen/qc_recoded/impute_recoded_selected_sample_{chrom}.pgen"),
-        ws_path("pgen/qc_recoded/impute_recoded_selected_sample_{chrom}.pvar"),
-        ws_path("pgen/qc_recoded/impute_recoded_selected_sample_{chrom}.psam"),
+        rules.selected_sample.output,
     output:
         ws_path(
             "pgen/qc_recoded/impute_recoded_selected_sample_filtered_var_{chrom}.pgen"
@@ -184,20 +212,12 @@ rule filter_var:
 
 rule create_bgen:
     input:
-        ws_path(
-            "pgen/qc_recoded/impute_recoded_selected_sample_filtered_var_{chrom}.pgen"
-        ),
-        ws_path(
-            "pgen/qc_recoded/impute_recoded_selected_sample_filtered_var_{chrom}.pvar"
-        ),
-        ws_path(
-            "pgen/qc_recoded/impute_recoded_selected_sample_filtered_var_{chrom}.psam"
-        ),
+        rules.filter_var.output,
     output:
-        ws_path(
+        bgen=ws_path(
             "pgen/qc_recoded/bgen_impute_recoded_selected_sample_filtered_var_chr_{chrom}.bgen"
         ),
-        ws_path(
+        sample=ws_path(
             "pgen/qc_recoded/bgen_impute_recoded_selected_sample_filtered_var_chr_{chrom}.sample"
         ),
     container:
@@ -224,9 +244,7 @@ rule create_bgen:
 
 rule qctool:
     input:
-        ws_path(
-            "pgen/qc_recoded/bgen_impute_recoded_selected_sample_filtered_var_chr_{chrom}.bgen"
-        ),
+        rules.create_bgen.output.bgen,
     output:
         ws_path(
             "pgen/qc_recoded/snp-stats_impute_recoded_selected_sample_filtered_var_chr_{chrom}.txt"
@@ -246,9 +264,7 @@ rule qctool:
 
 rule get_hq_variants:
     input:
-        ws_path(
-            "pgen/qc_recoded/snp-stats_impute_recoded_selected_sample_filtered_var_chr_{chrom}.txt"
-        ),
+        rules.qctool.output,
     output:
         snp_list=ws_path(
             "pgen/qc_recoded/hq_variants_impute_recoded_selected_sample_filtered_var_chr_{chrom}.txt"
@@ -256,31 +272,23 @@ rule get_hq_variants:
         log=ws_path("pgen/qc_recoded/report_hq_variants_chr{chrom}.log"),
     resources:
         runtime=lambda wc, attempt: attempt * 60,
+    params:
+        INFO_score=config.get("INFO_score"),
     shell:
         """
     total_rows=$(grep -v ^#  {input} | wc -l) && \
-    echo "Number of rows before filtering for INFO score > 0.7: $total_rows" >> {output.log} && \
+    echo "Number of rows before filtering for INFO score > {params.INFO_score}: $total_rows" >> {output.log} && \
     grep -v ^#  {input} | \
-    awk '$17 > 0.7 {{ print $2 }}'  >  {output.snp_list} && \
+    awk '$17 > {params.INFO_score} {{ print $2 }}'  >  {output.snp_list} && \
     filtered_rows=$(wc -l < {output.snp_list}) && \
-    echo "Number of rows after filtering for INFO score > 0.7: $filtered_rows" >> {output.log}
+    echo "Number of rows after filtering for INFO score > {params.INFO_score}: $filtered_rows" >> {output.log}
     """
 
 
 rule filter_hq_variants:
     input:
-        ws_path(
-            "pgen/qc_recoded/impute_recoded_selected_sample_filtered_var_{chrom}.pgen"
-        ),
-        ws_path(
-            "pgen/qc_recoded/impute_recoded_selected_sample_filtered_var_{chrom}.pvar"
-        ),
-        ws_path(
-            "pgen/qc_recoded/impute_recoded_selected_sample_filtered_var_{chrom}.psam"
-        ),
-        ws_path(
-            "pgen/qc_recoded/hq_variants_impute_recoded_selected_sample_filtered_var_chr_{chrom}.txt"
-        ),
+        rules.filter_var.output,
+        rules.get_hq_variants.output.snp_list,
     output:
         ws_path(
             "pgen/qc_recoded/impute_recoded_selected_sample_filter_hq_var_{chrom}.pgen"
@@ -319,7 +327,7 @@ rule merge_filter_hq_variants:
             ws_path(
                 "pgen/qc_recoded/impute_recoded_selected_sample_filter_hq_var_{chrom}.pgen"
             ),
-            chrom=[i for i in range(1, 23)],
+            chrom=get_chromosomes(),
         ),
     output:
         pgen=ws_path(
@@ -341,7 +349,7 @@ rule merge_filter_hq_variants:
             ws_path(
                 "pgen/qc_recoded/impute_recoded_selected_sample_filter_hq_var_{chrom}.pgen"
             ),
-            chrom=[i for i in range(1, 23)],
+            chrom=get_chromosomes(),
         ),
         pmerge=ws_path(
             "pgen/qc_recoded/impute_recoded_selected_sample_filter_hq_var_all"
@@ -359,14 +367,10 @@ rule merge_filter_hq_variants:
 
 rule update_pgen_id:
     input:
-        ws_path(
-            "pgen/qc_recoded/impute_recoded_selected_sample_filter_hq_var_{chrom}.pgen"
-        ),
-        ws_path(
-            "pgen/qc_recoded/impute_recoded_selected_sample_filter_hq_var_{chrom}.pvar"
-        ),
-        ws_path(
-            "pgen/qc_recoded/impute_recoded_selected_sample_filter_hq_var_{chrom}.psam"
+        branch(
+            lookup(dpath="run/filter_by_INFO_score", within=config),
+            then=rules.filter_hq_variants.output,
+            otherwise=rules.filter_var.output,
         ),
     output:
         ws_path(
@@ -403,15 +407,7 @@ rule update_pgen_id:
 
 rule update_pgen_alleles:
     input:
-        ws_path(
-            "pgen/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_{chrom}.pgen"
-        ),
-        ws_path(
-            "pgen/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_{chrom}.pvar"
-        ),
-        ws_path(
-            "pgen/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_{chrom}.psam"
-        ),
+        rules.update_pgen_id.output,
     output:
         ws_path(
             "pgen/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.pgen"
@@ -456,7 +452,7 @@ rule merge_filter_hq_variants_new_id_alleles_pgen:
             ws_path(
                 "pgen/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.pgen"
             ),
-            chrom=[i for i in range(1, 23)],
+            chrom=get_chromosomes(),
         ),
     output:
         ws_path(
@@ -478,7 +474,7 @@ rule merge_filter_hq_variants_new_id_alleles_pgen:
             ws_path(
                 "pgen/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.pgen"
             ),
-            chrom=[i for i in range(1, 23)],
+            chrom=get_chromosomes(),
         ),
         pmerge=ws_path(
             "pgen/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all"
@@ -496,15 +492,7 @@ rule merge_filter_hq_variants_new_id_alleles_pgen:
 
 rule freq_new_id_alleles_pgen:
     input:
-        ws_path(
-            "pgen/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all.pgen"
-        ),
-        ws_path(
-            "pgen/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all.pvar"
-        ),
-        ws_path(
-            "pgen/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all.psam"
-        ),
+        rules.merge_filter_hq_variants_new_id_alleles_pgen.output,
     output:
         ws_path(
             "pgen/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all_freq.afreq"

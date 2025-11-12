@@ -2,7 +2,7 @@
 #  Project handling
 # ----------------------------------------------------------------------
 # Default project (used if no .project file exists)
-DEFAULT_PROJECT ?= interval
+DEFAULT_PROJECT ?= example
 
 # .project file – contains the name of the active project
 PROJECT_FILE := .project

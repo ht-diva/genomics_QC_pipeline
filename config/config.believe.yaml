@@ -1,5 +1,7 @@
 run:
   delivery: True
+  filter_problematic_snps: True
+  filter_by_INFO_score: False
 
 # paths
 workspace_path: "results"
@@ -9,6 +11,7 @@ pvar_template: 'chr{chrom}.pvar'
 dest_path: '/exchange/healthds/pQTL/BELIEVE/Genetic_QC_files/harmonized'
 fam_path: '/exchange/healthds/pQTL/BELIEVE/Genetic_QC_files/BELIEVE_genotype_final_bed_123456_withoutPCoutliers_mac.fam'
 mapping_table: '/exchange/healthds/pQTL/BELIEVE/harmonized_gwas/snp_mapping/table.snp_mapping_correct.tsv.gz'
+problematic_snps_path: '/exchange/healthds/pQTL/BELIEVE/problematic_7k_snps/problematic_snps.txt'
 
 plink2_dict:
   mind: 0.1
@@ -16,3 +19,5 @@ plink2_dict:
   hwe: 1e-15
   mac: 10
   export_output_fmt: "bgen-1.1"
+
+INFO_score: "0.7"

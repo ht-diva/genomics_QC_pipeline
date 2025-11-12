@@ -49,7 +49,7 @@ rule merge_filter_hq_variants_new_id_alleles_bed:
             ws_path(
                 "bed/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.bed"
             ),
-            chrom=[i for i in range(1, 23)],
+            chrom=get_chromosomes(),
         ),
     output:
         ws_path(
@@ -71,7 +71,7 @@ rule merge_filter_hq_variants_new_id_alleles_bed:
             ws_path(
                 "bed/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.bed"
             ),
-            chrom=[i for i in range(1, 23)],
+            chrom=get_chromosomes(),
         ),
         pmerge=ws_path(
             "bed/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all"

@@ -1,5 +1,7 @@
 run:
   delivery: False
+  filter_problematic_snps: False
+  filter_by_INFO_score: True
 
 # paths
 workspace_path: "results"
@@ -9,6 +11,7 @@ pvar_template: 'impute_dedup_{chrom}_interval.pvar'
 dest_path: '/exchange/healthds/pQTL/INTERVAL/Genetic_QC_files/'
 fam_path: '/exchange/healthds/pQTL/INTERVAL/Genetic_QC_files/cleaned_genotype_INTERVAL.fam'
 mapping_table: '/exchange/healthds/pQTL/results/INTERVAL/qced_sumstats/table.snp_mapping.tsv.gz'
+problematic_snps_path: ''
 
 plink2_dict:
   mind: 0.1
@@ -16,3 +19,5 @@ plink2_dict:
   hwe: 1e-15
   mac: 10
   export_output_fmt: "bgen-1.2"
+
+INFO_score: "0.7"
