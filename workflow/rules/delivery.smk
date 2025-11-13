@@ -191,7 +191,7 @@ rule sync_bedfiles_all:
 rule write_readme:
     input:
         rules.sync_tables.output,
-        rules.sync_pfiles_qc_recoded_all.output,
+        #rules.sync_pfiles_qc_recoded_all.output,
         rules.sync_pfiles_qc_recoded_harmonised_all.output,
         rules.sync_bedfiles_all.output,
     output:
