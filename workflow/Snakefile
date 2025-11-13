@@ -387,8 +387,14 @@ rule update_pgen_id:
     resources:
         runtime=lambda wc, attempt: attempt * 60,
     params:
-        pfile=ws_path(
-            "pgen/qc_recoded/impute_recoded_selected_sample_filter_hq_var_{chrom}"
+        pfile=branch(
+            lookup(dpath="run/filter_by_INFO_score", within=config),
+            then=ws_path(
+                "pgen/qc_recoded/impute_recoded_selected_sample_filter_hq_var_{chrom}"
+            ),
+            otherwise=ws_path(
+                "pgen/qc_recoded/impute_recoded_selected_sample_filtered_var_{chrom}"
+            ),
         ),
         prefix=ws_path(
             "pgen/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_{chrom}"
