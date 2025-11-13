@@ -39,11 +39,11 @@ The output is written to the path defined by the **workspace_path** variable in 
 *Output:* A list of mirror SNPs pairs <br />
 
 2. **filter_mirror_snps**: <br />
-*Purpose:* Fiter out the mirror SNPs pairs <br />
+*Purpose:* Filter out the mirror SNPs pairs <br />
 *Output:* Updated pgen files without mirror SNPs pairs. <br />
 
 3. **filter_problematic_snps**: <br />
-*Purpose:* Fiter out a list of problematic SNPs <br />
+*Purpose:* Filter out a list of problematic SNPs <br />
 *Output:* Updated pgen files without problematic SNPs. <br />
 
 4. **list_rs:** <br />
