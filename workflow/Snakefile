@@ -41,6 +41,27 @@ awk -v OFS="\t" 'BEGIN {{print "SNPID", "rsID", "CHR", "POS", "NEA", "EA"}} {{pr
 """
 
 
+rule build_snp_mapping_files:
+    input:
+        get_pvar(),
+    output:
+        mapping_table=ws_path(
+            "snp_mapping/{chrom}/snp_mapping/table.snp_mapping.tsv.gz"
+        ),
+        table=ws_path("snp_mapping/{chrom}/outputs/{chrom}/{chrom}.gwaslab.tsv.gz"),
+    container:
+        "docker://ghcr.io/ht-diva/gwaspipe:7a17c0"
+    params:
+        config_file=config.get("config_file_path"),
+        output_path=ws_path("snp_mapping/{chrom}/"),
+    shell:
+        "gwaspipe "
+        "-f plink_pvar "
+        "-i {input} "
+        "-c {params.config_file} "
+        "-o {params.output_path}"
+
+
 rule get_mirror_snps:
     input:
         get_pvar(),
@@ -399,10 +420,10 @@ rule update_pgen_id:
         prefix=ws_path(
             "pgen/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_{chrom}"
         ),
-        table_mapping=config.get("mapping_table"),
+        mapping_table=rules.build_snp_mapping_files.output.mapping_table,
     shell:
         """plink2 \
-    --update-name {params.table_mapping} 1 2 \
+    --update-name {params.mapping_table} 1 2 \
     --pfile {params.pfile} \
     --make-pgen \
     --out {params.prefix} \
@@ -435,15 +456,12 @@ rule update_pgen_alleles:
         out_file=ws_path(
             "pgen/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}"
         ),
-        table_mapping=config.get("mapping_table"),
-        mapping_table_right_alleles=ws_path(
-            "pgen/qc_recoded_harmonised/snp_mapping_right_alleles_{chrom}.tsv"
-        ),
+        table=rules.build_snp_mapping_files.output.table,
     shell:
         """
-    paste <(zcat {params.table_mapping} | grep "False" | cut -f1 | cut -d":" -f1-4) <(zcat {params.table_mapping} | grep "False" | cut -f2 | cut -d":" -f3,4 | tr ":" "\t") <(zcat {params.table_mapping} | grep "False" | cut -f1 | cut -d":" -f3,4 | tr ":" "\t") > {params.mapping_table_right_alleles} &&
     plink2 \
-    --ref-allele force {params.mapping_table_right_alleles} 4 \
+    --ref-allele force {params.table} 5 \
+    --alt1-allele {params.table} 4 \
     --make-pgen \
     --pfile {params.pfile} \
     --out {params.out_file} \

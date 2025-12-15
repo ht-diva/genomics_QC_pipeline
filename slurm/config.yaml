@@ -21,6 +21,10 @@ default-resources:
     threads: 1
     runtime: attempt * 5
 set-resources:
+    build_snp_mapping_files:
+      threads: *cores
+      mem_mb: 2048 + attempt * 2048
+      runtime: attempt * 60
     get_mirror_snps:
       mem_mb: 2048 + attempt * 2048
       threads: *cores
