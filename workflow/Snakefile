@@ -393,6 +393,7 @@ rule update_pgen_id:
             then=rules.filter_hq_variants.output,
             otherwise=rules.filter_var.output,
         ),
+        rules.build_snp_mapping_files.output.mapping_table,
     output:
         ws_path(
             "pgen/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_{chrom}.pgen"
@@ -435,6 +436,7 @@ rule update_pgen_id:
 rule update_pgen_alleles:
     input:
         rules.update_pgen_id.output,
+        rules.build_snp_mapping_files.output.table,
     output:
         ws_path(
             "pgen/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.pgen"

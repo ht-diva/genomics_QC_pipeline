@@ -37,6 +37,18 @@ def get_final_output():
             chrom=get_chromosomes(),
         )
     ),
+    final_output.extend(
+        expand(
+            ws_path("snp_mapping/{chrom}/snp_mapping/table.snp_mapping.tsv.gz"),
+            chrom=get_chromosomes(),
+        )
+    ),
+    final_output.extend(
+        expand(
+            ws_path("snp_mapping/{chrom}/outputs/{chrom}/{chrom}.gwaslab.tsv.gz"),
+            chrom=get_chromosomes(),
+        )
+    ),
     if config.get("run").get("filter_by_INFO_score"):
         final_output.extend(
             expand(
