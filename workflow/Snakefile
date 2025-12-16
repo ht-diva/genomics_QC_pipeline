@@ -130,43 +130,13 @@ rule filter_problematic_snps:
  """
 
 
-rule recode_pgen:
+rule selected_sample:
     input:
         branch(
             lookup(dpath="run/filter_problematic_snps", within=config),
             then=rules.filter_problematic_snps.output,
             otherwise=rules.filter_mirror_snps.output,
         ),
-    output:
-        ws_path("pgen/qc_recoded/impute_dedup_recoded_{chrom}.pgen"),
-        ws_path("pgen/qc_recoded/impute_dedup_recoded_{chrom}.pvar"),
-        ws_path("pgen/qc_recoded/impute_dedup_recoded_{chrom}.psam"),
-    container:
-        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
-    resources:
-        runtime=lambda wc, attempt: attempt * 60,
-    params:
-        prefix=ws_path("pgen/qc_recoded/impute_dedup_recoded_{chrom}"),
-        pfile=branch(
-            lookup(dpath="run/filter_problematic_snps", within=config),
-            then=ws_path("pgen/filtering/filtered_problematic_snps_{chrom}"),
-            otherwise=ws_path("pgen/filtering/impute_filtered_mirror_snps_{chrom}"),
-        ),
-    shell:
-        """plink2 \
---pfile {params.pfile} \
---set-all-var-ids '@:#:$r:$a' \
---new-id-max-allele-len 1000 \
---make-pgen \
---out {params.prefix} \
---threads {resources.threads} \
---memory 90000 'require'
-"""
-
-
-rule selected_sample:
-    input:
-        rules.recode_pgen.output,
     output:
         ws_path("pgen/qc_recoded/impute_recoded_selected_sample_{chrom}.pgen"),
         ws_path("pgen/qc_recoded/impute_recoded_selected_sample_{chrom}.pvar"),
