@@ -82,23 +82,27 @@ The output is written to the path defined by the **workspace_path** variable in 
 *Purpose:* Merge the chromosome-specific pgen files from the previous step into a single pgen file. <br />
 *Output:* A combined pgen file containing high-quality variants from all chromosomes. <br />
 
-13. **update_pgen_id:** <br />
+13. **build_snp_mapping_files:** <br />
+*Purpose:* Generate SNP mapping files for each chromosome, harmonising the pvar from **recode_pgen** rule. <br />
+*Output:* SNP mapping table and harmonized pvar table for each chromosome. <br />
+
+14. **update_pgen_id:** <br />
 *Purpose:* Update the variant IDs in the pgen file to the format chr:pos:A0:A1, with A0 and A1 in alphabetical order. <br />
 *Output:* An updated pgen file with harmonised IDs. <br />
 
-14. **update_pgen_alleles:** <br />
+15. **update_pgen_alleles:** <br />
 *Purpose:* Harmonize the alleles in the pgen file to match the new IDs. <br />
 *Output:* A pgen file with harmonised alleles. <br />
 
-15. **merge_filter_hq_variants_new_id_alleles_pgen:** <br />
+16. **merge_filter_hq_variants_new_id_alleles_pgen:** <br />
 *Purpose:* Merge all the pgen files from the previous step into a final single pgen file. <br />
 *Output:* A final combined pgen file with harmonised IDs and alleles, ready for pQTL analysis. <br />
 
-16. **pgen2bed:** <br />
+17. **pgen2bed:** <br />
 *Purpose:* Convert pgen file into bed format. Set hard-call-threshold equal to 0.49999999. <br />
 *Output:* A bed file with harmonised alleles and minimized missing dosage. <br />
 
-17. **merge_filter_hq_variants_new_id_alleles_bed:** <br />
+18. **merge_filter_hq_variants_new_id_alleles_bed:** <br />
 *Purpose:* Merge all the bed files from the previous step into a final single bed file. <br />
 *Output:* A final combined bed file. <br />
 

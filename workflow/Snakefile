@@ -41,6 +41,27 @@ awk -v OFS="\t" 'BEGIN {{print "SNPID", "rsID", "CHR", "POS", "NEA", "EA"}} {{pr
 """
 
 
+rule build_snp_mapping_files:
+    input:
+        ws_path("pgen/qc_recoded/impute_dedup_recoded_{chrom}_.pvar"),
+    output:
+        mapping_table=ws_path(
+            "snp_mapping/{chrom}/snp_mapping/table.snp_mapping.tsv.gz"
+        ),
+        table=ws_path("snp_mapping/{chrom}/outputs/{chrom}/{chrom}.gwaslab.tsv.gz"),
+    container:
+        "docker://ghcr.io/ht-diva/gwaspipe:7a17c0"
+    params:
+        config_file=config.get("config_file_path"),
+        output_path=ws_path("snp_mapping/{chrom}/"),
+    shell:
+        "gwaspipe "
+        "-f plink_pvar "
+        "-i {input} "
+        "-c {params.config_file} "
+        "-o {params.output_path}"
+
+
 rule get_mirror_snps:
     input:
         get_pvar(),
@@ -117,15 +138,15 @@ rule recode_pgen:
             otherwise=rules.filter_mirror_snps.output,
         ),
     output:
-        ws_path("pgen/qc_recoded/impute_dedup_recoded_{chrom}.pgen"),
-        ws_path("pgen/qc_recoded/impute_dedup_recoded_{chrom}.pvar"),
-        ws_path("pgen/qc_recoded/impute_dedup_recoded_{chrom}.psam"),
+        ws_path("pgen/qc_recoded/impute_dedup_recoded_{chrom}_.pgen"),
+        ws_path("pgen/qc_recoded/impute_dedup_recoded_{chrom}_.pvar"),
+        ws_path("pgen/qc_recoded/impute_dedup_recoded_{chrom}_.psam"),
     container:
         "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
     resources:
         runtime=lambda wc, attempt: attempt * 60,
     params:
-        prefix=ws_path("pgen/qc_recoded/impute_dedup_recoded_{chrom}"),
+        prefix=ws_path("pgen/qc_recoded/impute_dedup_recoded_{chrom}_"),
         pfile=branch(
             lookup(dpath="run/filter_problematic_snps", within=config),
             then=ws_path("pgen/filtering/filtered_problematic_snps_{chrom}"),
@@ -133,14 +154,14 @@ rule recode_pgen:
         ),
     shell:
         """plink2 \
---pfile {params.pfile} \
---set-all-var-ids '@:#:$r:$a' \
---new-id-max-allele-len 1000 \
---make-pgen \
---out {params.prefix} \
---threads {resources.threads} \
---memory 90000 'require'
-"""
+    --pfile {params.pfile} \
+    --set-all-var-ids '@:#:$r:$a' \
+    --new-id-max-allele-len 1000 \
+    --make-pgen \
+    --out {params.prefix} \
+    --threads {resources.threads} \
+    --memory 90000 'require'
+    """
 
 
 rule selected_sample:
@@ -156,7 +177,7 @@ rule selected_sample:
         runtime=lambda wc, attempt: attempt * 60,
     params:
         fam=config.get("fam_path"),
-        pfile=ws_path("pgen/qc_recoded/impute_dedup_recoded_{chrom}"),
+        pfile=ws_path("pgen/qc_recoded/impute_dedup_recoded_{chrom}_"),
         prefix=ws_path("pgen/qc_recoded/impute_recoded_selected_sample_{chrom}"),
         mind=config.get("plink2_dict").get("mind"),
     shell:
@@ -372,6 +393,7 @@ rule update_pgen_id:
             then=rules.filter_hq_variants.output,
             otherwise=rules.filter_var.output,
         ),
+        rules.build_snp_mapping_files.output.mapping_table,
     output:
         ws_path(
             "pgen/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_{chrom}.pgen"
@@ -399,10 +421,10 @@ rule update_pgen_id:
         prefix=ws_path(
             "pgen/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_{chrom}"
         ),
-        table_mapping=config.get("mapping_table"),
+        mapping_table=rules.build_snp_mapping_files.output.mapping_table,
     shell:
         """plink2 \
-    --update-name {params.table_mapping} 1 2 \
+    --update-name {params.mapping_table} 1 2 \
     --pfile {params.pfile} \
     --make-pgen \
     --out {params.prefix} \
@@ -414,6 +436,7 @@ rule update_pgen_id:
 rule update_pgen_alleles:
     input:
         rules.update_pgen_id.output,
+        rules.build_snp_mapping_files.output.table,
     output:
         ws_path(
             "pgen/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.pgen"
@@ -435,15 +458,12 @@ rule update_pgen_alleles:
         out_file=ws_path(
             "pgen/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}"
         ),
-        table_mapping=config.get("mapping_table"),
-        mapping_table_right_alleles=ws_path(
-            "pgen/qc_recoded_harmonised/snp_mapping_right_alleles_{chrom}.tsv"
-        ),
+        table=rules.build_snp_mapping_files.output.table,
     shell:
         """
-    paste <(zcat {params.table_mapping} | grep "False" | cut -f1 | cut -d":" -f1-4) <(zcat {params.table_mapping} | grep "False" | cut -f2 | cut -d":" -f3,4 | tr ":" "\t") <(zcat {params.table_mapping} | grep "False" | cut -f1 | cut -d":" -f3,4 | tr ":" "\t") > {params.mapping_table_right_alleles} &&
     plink2 \
-    --ref-allele force {params.mapping_table_right_alleles} 4 \
+    --ref-allele force {params.table} 5 3 \
+    --alt1-allele {params.table} 4 3 \
     --make-pgen \
     --pfile {params.pfile} \
     --out {params.out_file} \
