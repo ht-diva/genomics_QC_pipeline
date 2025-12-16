@@ -462,8 +462,8 @@ rule update_pgen_alleles:
     shell:
         """
     plink2 \
-    --ref-allele force {params.table} 5 \
-    --alt1-allele {params.table} 4 \
+    --ref-allele force {params.table} 5 3 \
+    --alt1-allele {params.table} 4 3 \
     --make-pgen \
     --pfile {params.pfile} \
     --out {params.out_file} \
