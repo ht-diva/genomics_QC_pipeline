@@ -43,7 +43,7 @@ awk -v OFS="\t" 'BEGIN {{print "SNPID", "rsID", "CHR", "POS", "NEA", "EA"}} {{pr
 
 rule build_snp_mapping_files:
     input:
-        ws_path("pgen/qc_recoded/impute_dedup_recoded_{chrom}.pvar"),
+        ws_path("pgen/qc_recoded/impute_dedup_recoded_{chrom}_.pvar"),
     output:
         mapping_table=ws_path(
             "snp_mapping/{chrom}/snp_mapping/table.snp_mapping.tsv.gz"
@@ -138,15 +138,15 @@ rule recode_pgen:
             otherwise=rules.filter_mirror_snps.output,
         ),
     output:
-        ws_path("pgen/qc_recoded/impute_dedup_recoded_{chrom}.pgen"),
-        ws_path("pgen/qc_recoded/impute_dedup_recoded_{chrom}.pvar"),
-        ws_path("pgen/qc_recoded/impute_dedup_recoded_{chrom}.psam"),
+        ws_path("pgen/qc_recoded/impute_dedup_recoded_{chrom}_.pgen"),
+        ws_path("pgen/qc_recoded/impute_dedup_recoded_{chrom}_.pvar"),
+        ws_path("pgen/qc_recoded/impute_dedup_recoded_{chrom}_.psam"),
     container:
         "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
     resources:
         runtime=lambda wc, attempt: attempt * 60,
     params:
-        prefix=ws_path("pgen/qc_recoded/impute_dedup_recoded_{chrom}"),
+        prefix=ws_path("pgen/qc_recoded/impute_dedup_recoded_{chrom}_"),
         pfile=branch(
             lookup(dpath="run/filter_problematic_snps", within=config),
             then=ws_path("pgen/filtering/filtered_problematic_snps_{chrom}"),
