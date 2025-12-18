@@ -10,7 +10,6 @@ pgen_template: 'impute_dedup_{chrom}_interval.pgen'
 pvar_template: 'impute_dedup_{chrom}_interval.pvar'
 dest_path: '/exchange/healthds/pQTL/INTERVAL/Genetic_QC_files/'
 fam_path: '/exchange/healthds/pQTL/INTERVAL/Genetic_QC_files/cleaned_genotype_INTERVAL.fam'
-mapping_table: '/exchange/healthds/pQTL/results/INTERVAL/qced_sumstats/table.snp_mapping.tsv.gz'
 problematic_snps_path: ''
 config_file_path: "config/gwaspipe/config_snp_mapping.interval.yml"
 
