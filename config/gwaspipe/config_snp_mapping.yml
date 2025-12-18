@@ -66,9 +66,9 @@ steps:
       fmt: "snp_mapping"
 
 
-# Filename transformation, e.g.: chr22.pvar
-filename_mask: [ True, False]
-filename_sep: '.'
+# Filename transformation, e.g.: impute_dedup_recoded_22_.gwaslab.tsv.gz
+filename_mask: [ False, False, False, True, False]
+filename_sep: '_'
 
 # IO
 root_path: "results"
