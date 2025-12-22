@@ -14,11 +14,7 @@ rule recode_pgen:
         runtime=lambda wc, attempt: attempt * 60,
     params:
         prefix=ws_path(RECODE_PREFIX),
-        pfile=branch(
-            lookup(dpath="run/filter_problematic_snps", within=config),
-            then=ws_path("pgen/filtering/filtered_problematic_snps_{chrom}"),
-            otherwise=ws_path("pgen/filtering/impute_filtered_mirror_snps_{chrom}"),
-        ),
+        pfile=get_pgen(stem=True),
     shell:
         """plink2 \
 --pfile {params.pfile} \
