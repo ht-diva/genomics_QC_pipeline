@@ -44,12 +44,27 @@ rule filter_mirror_snps:
  """
 
 
+SANITIZE_PROBLEMATIC_SNPS = "pgen/qc/filtering/"
+
+
+rule sanitize_problematic_snps:
+    input:
+        problematic_snps=config.get("problematic_snps_path"),
+    output:
+        ws_path(SANITIZE_PROBLEMATIC_SNPS + "problematic_snps_list.txt"),
+    resources:
+        runtime=lambda wc, attempt: attempt * 60,
+    shell:
+        """sed 's/^chr//' {input} > {output}"""
+
+
 PROBLEMATIC_SNPS_PREFIX = "pgen/qc/filtering/{chrom}_filtered_problematic_snps"
 
 
 rule filter_problematic_snps:
     input:
         rules.filter_mirror_snps.output,
+        rules.sanitize_problematic_snps.output,
     output:
         temp(ws_path(PROBLEMATIC_SNPS_PREFIX + ".pgen")),
         temp(ws_path(PROBLEMATIC_SNPS_PREFIX + ".pvar")),
@@ -61,17 +76,10 @@ rule filter_problematic_snps:
     params:
         pfile=rules.filter_mirror_snps.params.prefix,
         prefix=ws_path(PROBLEMATIC_SNPS_PREFIX),
-        problematic_snps=config.get("problematic_snps_path"),
-        problematic_snps_list_path=ws_path(
-            PROBLEMATIC_SNPS_PREFIX.replace(
-                "{chrom}_filtered_problematic_snps", "problematic_snps_list.txt"
-            )
-        ),
     shell:
-        """sed 's/^chr//' {params.problematic_snps} > {params.problematic_snps_list_path} \
-plink2 \
+        """plink2 \
  --pfile {params.pfile} \
- --exclude {params.problematic_snps_list_path} \
+ --exclude {input[1]} \
  --make-pgen \
  --out {params.prefix} \
  --threads {resources.threads} \
