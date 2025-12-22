@@ -17,7 +17,7 @@ rule sync_tables:
 
 rule sync_header_info:
     input:
-        ws_path("pgen/impute_dedup_{chrom}.info"),
+        rules.header_info.output,
     output:
         touch(dest_path("pgen/.header_info_{chrom}.done")),
     resources:
@@ -82,9 +82,9 @@ rule sync_pfiles_qc_recoded_harmonised_c:
         pvar_c=rules.update_pgen_alleles.output.pvar,
         psam_c=rules.update_pgen_alleles.output.psam,
     output:
-        touch(dest_path("pgen/.qc_recoded_harmonised_{chrom}_delivery.done")),
+        touch(dest_path("pgen/.qc_harmonised_{chrom}_delivery.done")),
     params:
-        folder=dest_path("pgen/qc_recoded_harmonised/"),
+        folder=dest_path("pgen/qc_harmonised/"),
     resources:
         runtime=lambda wc, attempt: attempt * 90,
     shell:
@@ -100,9 +100,9 @@ rule sync_pfiles_qc_recoded_harmonised_all:
         pvar_a=rules.merge_qc_harmonised_pgen.output.pvar,
         psam_a=rules.merge_qc_harmonised_pgen.output.psam,
     output:
-        touch(dest_path("pgen/.qc_recoded_harmonised_all_delivery.done")),
+        touch(dest_path("pgen/.qc_harmonised_all_delivery.done")),
     params:
-        folder=dest_path("pgen/qc_recoded_harmonised/"),
+        folder=dest_path("pgen/qc_harmonised/"),
     resources:
         runtime=lambda wc, attempt: attempt * 120,
     shell:
@@ -116,9 +116,9 @@ rule sync_pfiles_qc_recoded_harmonised_all_freq:
     input:
         afreq=rules.freq_qc_harmonised_pgen.output.afreq,
     output:
-        touch(dest_path("pgen/.qc_recoded_harmonised_all_freq_delivery.done")),
+        touch(dest_path("pgen/.qc_harmonised_all_freq_delivery.done")),
     params:
-        folder=dest_path("pgen/qc_recoded_harmonised/"),
+        folder=dest_path("pgen/qc_harmonised/"),
     resources:
         runtime=lambda wc, attempt: attempt * 120,
     shell:
@@ -134,7 +134,7 @@ rule sync_bedfiles_c:
     output:
         touch(dest_path("bed/.{chrom}_delivery.done")),
     params:
-        folder=dest_path("bed/qc_recoded_harmonised/"),
+        folder=dest_path("bed/qc_harmonised/"),
     resources:
         runtime=lambda wc, attempt: attempt * 90,
     shell:
@@ -152,7 +152,7 @@ rule sync_bedfiles_all:
     output:
         touch(dest_path("bed/.all_delivery.done")),
     params:
-        folder=dest_path("bed/qc_recoded_harmonised/"),
+        folder=dest_path("bed/qc_harmonised/"),
     resources:
         runtime=lambda wc, attempt: attempt * 120,
     shell:

@@ -8,8 +8,8 @@ workspace_path: "results"
 pgen_src_path: 'example'
 pgen_template: 'chr{chrom}.pgen'
 pvar_template: 'chr{chrom}.pvar'
-dest_path: '/exchange/healthds/pQTL/'
-problematic_snps_path: ''
+dest_path: 'destination'
+problematic_snps_path: 'wip/problematic_snps.txt'
 config_file_path: "config/gwaspipe/config_snp_mapping.yml"
 
 ## Sample selection - https://www.cog-genomics.org/plink/2.0/filter
