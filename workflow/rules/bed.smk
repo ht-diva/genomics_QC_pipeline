@@ -45,9 +45,7 @@ rule merge_qc_harmonised_bed:
         runtime=lambda wc, attempt: attempt * 60,
     params:
         base_prefix=expand(
-            ws_path(
-                "bed/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.bed"
-            ),
+            rules.pgen2bed.params.prefix + ".bed",
             chrom=get_chromosomes(),
         ),
         pmerge=ws_path(MERGE_QC_HARMONISED_BED_PREFIX),
