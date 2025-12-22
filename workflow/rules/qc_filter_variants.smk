@@ -15,7 +15,7 @@ rule get_mirror_snps:
         "--output_file {output}"
 
 
-MIRROS_SNPS_PREFIX = "pgen/qc/filtering/{chrom}_impute_filtered_mirror_snps"
+MIRROS_SNPS_PREFIX = "pgen/qc/filtering/{chrom}_filtered_mirror_snps"
 
 
 rule filter_mirror_snps:
@@ -62,10 +62,16 @@ rule filter_problematic_snps:
         pfile=rules.filter_mirror_snps.params.prefix,
         prefix=ws_path(PROBLEMATIC_SNPS_PREFIX),
         problematic_snps=config.get("problematic_snps_path"),
+        problematic_snps_list_path=ws_path(
+            PROBLEMATIC_SNPS_PREFIX.replace(
+                "{chrom}_filtered_problematic_snps", "problematic_snps_list.txt"
+            )
+        ),
     shell:
-        """plink2 \
+        """sed 's/^chr//' {params.problematic_snps} > {params.problematic_snps_list_path} \
+plink2 \
  --pfile {params.pfile} \
- --exclude {params.problematic_snps} \
+ --exclude {params.problematic_snps_list_path} \
  --make-pgen \
  --out {params.prefix} \
  --threads {resources.threads} \
