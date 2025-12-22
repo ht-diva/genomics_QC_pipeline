@@ -48,6 +48,9 @@ set-resources:
     filter_var:
       mem_mb: 20480 + attempt * 2048
       threads: *cores
+    filter_by_minimac3:
+      mem_mb: 20480 + attempt * 2048
+      threads: *cores
     create_bgen:
       mem_mb: 20480 + attempt * 2048
       threads: *cores
