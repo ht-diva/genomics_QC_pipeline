@@ -96,9 +96,9 @@ rule sync_pfiles_qc_recoded_harmonised_c:
 
 rule sync_pfiles_qc_recoded_harmonised_all:
     input:
-        pgen_a=rules.merge_new_id_alleles_pgen.output.pgen,
-        pvar_a=rules.merge_new_id_alleles_pgen.output.pvar,
-        psam_a=rules.merge_new_id_alleles_pgen.output.psam,
+        pgen_a=rules.merge_qc_harmonised_pgen.output.pgen,
+        pvar_a=rules.merge_qc_harmonised_pgen.output.pvar,
+        psam_a=rules.merge_qc_harmonised_pgen.output.psam,
     output:
         touch(dest_path("pgen/.qc_recoded_harmonised_all_delivery.done")),
     params:
@@ -114,7 +114,7 @@ rule sync_pfiles_qc_recoded_harmonised_all:
 
 rule sync_pfiles_qc_recoded_harmonised_all_freq:
     input:
-        afreq=rules.freq_new_id_alleles_pgen.output.afreq,
+        afreq=rules.freq_qc_harmonised_pgen.output.afreq,
     output:
         touch(dest_path("pgen/.qc_recoded_harmonised_all_freq_delivery.done")),
     params:
