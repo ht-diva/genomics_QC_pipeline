@@ -42,7 +42,7 @@ set-resources:
       threads: *cores
     header_info:
         mem_mb: 2048 + attempt * 2048
-    selected_sample:
+    select_sample:
       mem_mb: 102400 + attempt * 2048
       threads: *cores
     filter_var:
@@ -69,15 +69,15 @@ set-resources:
     update_pgen_alleles:
       mem_mb: 1024 + attempt * 1024
       threads: *cores
-    merge_filter_hq_variants_new_id_alleles_pgen:
+    merge_qc_harmonised_pgen:
       mem_mb: 102400 + attempt * 2048
       threads: *cores
     pgen2bed:
       mem_mb: 1024 + attempt * 1024
       threads: *cores
-    merge_filter_hq_variants_new_id_alleles_bed:
+    merge_qc_harmonised_bed:
       mem_mb: 102400 + attempt * 2048
       threads: *cores
-    freq_new_id_alleles_pgen:
+    freq_qc_harmonised_pgen:
       mem_mb: 102400 + attempt * 2048
       threads: *cores
