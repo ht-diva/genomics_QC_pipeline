@@ -63,8 +63,8 @@ PROBLEMATIC_SNPS_PREFIX = "pgen/qc/filtering/{chrom}_filtered_problematic_snps"
 
 rule filter_problematic_snps:
     input:
-        rules.filter_mirror_snps.output,
         rules.sanitize_problematic_snps.output,
+        rules.filter_mirror_snps.output,
     output:
         temp(ws_path(PROBLEMATIC_SNPS_PREFIX + ".pgen")),
         temp(ws_path(PROBLEMATIC_SNPS_PREFIX + ".pvar")),
@@ -79,7 +79,7 @@ rule filter_problematic_snps:
     shell:
         """plink2 \
  --pfile {params.pfile} \
- --exclude {input[1]} \
+ --exclude {input[0]} \
  --make-pgen \
  --out {params.prefix} \
  --threads {resources.threads} \
