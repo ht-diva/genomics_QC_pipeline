@@ -162,6 +162,8 @@ rule filter_by_minimac3:
         pgen=ws_path(FILTER_BY_MINIMAC3_PREFIX + ".pgen"),
         pvar=ws_path(FILTER_BY_MINIMAC3_PREFIX + ".pvar"),
         psam=ws_path(FILTER_BY_MINIMAC3_PREFIX + ".psam"),
+    container:
+        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
     resources:
         runtime=lambda wc, attempt: attempt * 60,
     params:
