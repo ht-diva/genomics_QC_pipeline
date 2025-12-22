@@ -1,4 +1,4 @@
-RECODE_PREFIX = "pgen/qc/{chrom}_impute_dedup_recoded"
+RECODE_PREFIX = "pgen/qc/{chrom}_impute_recoded"
 
 
 rule recode_pgen:
