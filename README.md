@@ -1,114 +1,135 @@
 # genomics_QC_pipeline
-The genomic QC pipeline is designed to clean and prepare imputed genotype data for pQTL analysis.
-All the rules were based on Alessia Mapelli’s work: [https://github.com/ht-diva/pqtl-believe-interval/blob/main/Script_QC_INTERVAL_genomics.R]
+A comprehensive quality control pipeline for cleaning and preparing imputed genotype data for protein quantitative trait locus (pQTL) analysis.
+This pipeline is based on Alessia Mapelli and Solène Cadiou's work, and has been adapted for reproducible genomic data processing.
+
+## Features
+
+- **Comprehensive QC**: Filters mirror SNPs, problematic variants, and low-quality samples
+- **Format Conversion**: Handles PGEN and BED formats
+- **Harmonization**: Standardizes variant IDs and alleles across datasets
+- **Modular Design**: Configurable for different projects (INTERVAL, BELIEVE, etc.)
+- **Reproducible**: Uses Snakemake workflow management with containerized tools
 
 
-## Requirements
-* Singularity
+### Software Dependencies
+- [Snakemake](https://snakemake.readthedocs.io/) (workflow management)
+- [Singularity](https://sylabs.io/singularity/) (container runtime)
+- Git (version control)
 
-see also [environment.yml](environment.yml) and [Makefile](Makefile)
+### Configuration
+See [environment.yml](environment.yml) for Python dependencies and [Makefile](Makefile) for common commands.
 
-## Getting started
+## Quick Start
 
-* git clone https://github.com/ht-diva/genomics_QC_pipeline.git
-* cd genomics_QC_pipeline
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/ht-diva/genomics_QC_pipeline.git
+   cd genomics_QC_pipeline
+   ```
 
-**Choosing a project**
+2. **Select a project configuration**:
+   ```bash
+   # Choose one of the available configurations
+   make project-interval    # For INTERVAL study
+   make project-believe     # For BELIEVE study
+   make project-<custom>    # For custom configurations
+   ```
 
-The pipeline can be run with different configuration sets (e.g., `interval`, `believe`, …).
-
-Set the active project by creating/updating the hidden `.project` file **or** by using one of the Makefile helpers:
-  ```bash
-  make project-interval   # uses config/config.interval.yaml
-  make project-believe    # uses config/config.believe.yaml
-  make project-<name>     # any custom name matching config/config.<name>.yaml
-  ```
-The selected project is shown when you run `make` (it prints “Current project: …”).
-
-Then run the pipe with:
-  ```bash
-  sbatch submit.sbatch
-  ```
+3. **Run the pipeline**:
+   ```bash
+   sbatch submit.sbatch
 
 
-The output is written to the path defined by the **workspace_path** variable in the config.yaml file. By default, this path is `./results`.
+## Configuration
 
-## Rules description
-1. **get_mirror_snps**: <br />
-*Purpose:* Generate a list of all mirror SNPs ( X:XXXXXXX:A:B and X:XXXXXXX:B:A) <br />
-*Output:* A list of mirror SNPs pairs <br />
+### Project Selection
+The pipeline supports multiple project configurations stored in `config/config.<name>.yaml`. The active project is set by:
 
-2. **filter_mirror_snps**: <br />
-*Purpose:* Filter out the mirror SNPs pairs <br />
-*Output:* Updated pgen files without mirror SNPs pairs. <br />
+1. Creating/updating the `.project` file, or
+2. Using Makefile helpers (recommended)
 
-3. **filter_problematic_snps**: <br />
-*Purpose:* Filter out a list of problematic SNPs <br />
-*Output:* Updated pgen files without problematic SNPs. <br />
+### Output Location
+Results are written to the path specified by `workspace_path` in your config file (default: `./results`).
 
-4. **list_rs:** <br />
-*Purpose:* Generate lists of all rsIDs and pseudo biallelic variants from the initial pgen file.<br />
-*Output:* Two files – one containing all rsIDs and the other containing pseudo biallelic variants.<br />
+## Pipeline Workflow
 
-5. **recode_pgen:** <br />
-*Purpose:* Replace the IDs in the imputed pgen file with a new format: chr:pos:ref:alt. <br />
-*Output:* An updated pgen file with the new ID format. <br />
+The pipeline consists of several processing steps organized in 3 main blocks:
 
-6. **selected_sample:** <br />
-*Purpose:* Select individuals who are present in both the 2018 data and have corresponding proteomic data. <br />
-*Output:* A filtered list of individuals. <br />
+### 1. Quality Control
+- **ID Standardization**: Converts variant IDs to `chr:pos:ref:alt` format
+- **Sample Selection**: Filters to include only individuals with matching proteomic data
+- **Mirror SNP Handling**: Identifies and removes problematic palindromic variants
+- **Variant Filtering**: Removes low-quality variants based on multiple metrics (MAF, HWE, etc.)
+  - **Imputation quality**: Filters based on imputation quality metrics (INFO-score or MINIMAC3)
 
-7. **filter_var:** <br />
-*Purpose:* Perform several quality control steps: remove additional failed samples, identify and remove heterozygosity outliers, perform minor allele frequency (MAF) filtering, remove related samples based on Hardy-Weinberg equilibrium (HWE). <br />
-*Output:* A cleaned dataset with high-quality variants and samples. <br />
+### 2. Data Harmonization
+- **ID Harmonization**: Arrange the variant IDs in alphabetical order.
+- **Allele Harmonization**: Ensures consistent allele representation across datasets
 
-8. **create_bgen:** <br />
-*Purpose:* Convert the filtered data from the previous steps into bgen format, a commonly used format for storing large-scale genotype data. <br />
-*Output:* A bgen file containing the cleaned genotype data. <br />
+### 3. Final Preparation
+- **Format Conversion**: Supports PGEN ↔ BED conversions
+- **Merging**: Combines chromosome-specific files into unified datasets
+- **Delivery**: Organizes final outputs in standardized directory structure
 
-9. **qctool:** <br />
-*Purpose:* Compute SNP statistics using qctool, ensuring the quality of the variants. <br />
-*Output:* SNP statistics file. <br />
+## Output Structure
 
-10. **get_hq_variants:** <br />
-*Purpose:* Filter variants to retain only those with an info score greater than 0.7. <br />
-*Output:* A list of high-quality variants. <br />
+```
+results/
+├── bed/
+│   └── qc_harmonised/   # Harmonized BED files ready for analysis
+├── pgen/
+│   ├── *_impute.info
+│   ├── pseudo_biallelic.txt
+│   ├── qc_harmonised/   # Fully quality-controlled, harmonized PGEN files
+│   └── recode_rsid.txt
+└── README.txt
+```
 
-11. **filter_hq_variants:** <br />
-*Purpose:* Extract SNPs with an info score greater than 0.7 from the pgen file and create a new pgen file for each chromosome. <br />
-*Output:* pgen files for each chromosome containing only high-quality variants. <br />
+## Rule Reference
 
-12. **merge_filter_hq_variants:** <br />
-*Purpose:* Merge the chromosome-specific pgen files from the previous step into a single pgen file. <br />
-*Output:* A combined pgen file containing high-quality variants from all chromosomes. <br />
+| Rule Name                  | Purpose                                                                                  | Output Files                                                                              |
+|----------------------------|------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
+| `list_rs`                  | Generate lists of rsIDs and pseudo-biallelic variants                                    | `merge_rsids.txt`, `recode_rsids.txt`, `pseudo_biallelic_var.txt`, `pseudo_biallelic.txt` |
+| `header_info`              | Generate a basic information report from original dataset per chromosome                 | text report                                                                               |
+| `recode_pgen`              | Replace IDs with chr:pos:ref:alt format                                                  | Recoded PGEN files                                                                        |
+| `select_sample`            | Select individuals present in both genomic and proteomic datasets                        | Filtered sample files                                                                     |
+| `get_mirror_snps`          | Identify mirror SNP pairs (X:XXXXXXX:A:B and X:XXXXXXX:B:A)                              | `{chrom}_mirror_snps.txt`                                                                 |
+| `filter_mirror_snps`       | Remove mirror SNPs from dataset                                                          | `{chrom}_filtered_mirror_snps.{pgen,pvar,psam}`                                           |
+| `filter_problematic_snps`  | Filter out a list of predefined problematic SNPs                                         | Filtered PGEN files                                                                       |
+| `filter_var`               | Perform QC: remove failed samples, heterozygosity outliers, MAF filtering, HWE filtering | Quality-controlled PGEN files                                                             |
+| `create_bgen`              | Convert filtered data to BGEN format                                                     | `{chrom}_impute_recoded_selected_sample_filtered_var.{bgen,sample}`                       |
+| `qctool`                   | Compute SNP statistics using qctool                                                      | `snp-stats_chr_{chrom}_impute_recoded_selected_sample_filtered_var.txt`                   |
+| `get_hq_variants`          | Filter variants with info score > 0.7                                                    | List of high-quality variants                                                             |
+| `filter_hq_variants`       | Extract high-quality variants from PGEN files                                            | Chromosome-specific PGEN files with HQ variants                                           |
+| `merge_filter_hq_variants` | Merge chromosome-specific PGEN files                                                     | Combined PGEN file with HQ variants                                                       |
+| `build_snp_mapping_files`  | Generate SNP mapping files for harmonization                                             | Mapping table and harmonized PVAR table                                                   |
+| `update_pgen_id`           | Update variant IDs to chr:pos:A0:A1 format (alphabetical order)                          | PGEN files with updated IDs                                                               |
+| `update_pgen_alleles`      | Harmonize alleles to match new IDs                                                       | PGEN files with harmonized alleles                                                        |
+| `merge_qc_harmonised_pgen` | Merge final harmonized PGEN files                                                        | Final combined PGEN file                                                                  |
+| `pgen2bed`                 | Convert PGEN to BED format (hard-call-threshold = 0.49999999)                            | BED files with harmonized alleles                                                         |
+| `merge_qc_harmonised_bed`  | Merge final harmonized BED files                                                         | Final combined BED file                                                                   |
+| `write_readme`             | Generate documentation with traceability information                                     | `README.txt` with git information                                                         |
 
-13. **build_snp_mapping_files:** <br />
-*Purpose:* Generate SNP mapping files for each chromosome, harmonising the pvar from **recode_pgen** rule. <br />
-*Output:* SNP mapping table and harmonized pvar table for each chromosome. <br />
+## Workflow example
 
-14. **update_pgen_id:** <br />
-*Purpose:* Update the variant IDs in the pgen file to the format chr:pos:A0:A1, with A0 and A1 in alphabetical order. <br />
-*Output:* An updated pgen file with harmonised IDs. <br />
+<img src="dag.svg" alt="example workflow">
 
-15. **update_pgen_alleles:** <br />
-*Purpose:* Harmonize the alleles in the pgen file to match the new IDs. <br />
-*Output:* A pgen file with harmonised alleles. <br />
+## Customization
 
-16. **merge_filter_hq_variants_new_id_alleles_pgen:** <br />
-*Purpose:* Merge all the pgen files from the previous step into a final single pgen file. <br />
-*Output:* A final combined pgen file with harmonised IDs and alleles, ready for pQTL analysis. <br />
+To adapt the pipeline for your project:
 
-17. **pgen2bed:** <br />
-*Purpose:* Convert pgen file into bed format. Set hard-call-threshold equal to 0.49999999. <br />
-*Output:* A bed file with harmonised alleles and minimized missing dosage. <br />
+1. Create a new config file in `config/config.<your_project>.yaml`
+2. Update paths and parameters as needed
+3. Add any project-specific rules to the appropriate `.smk` files
 
-18. **merge_filter_hq_variants_new_id_alleles_bed:** <br />
-*Purpose:* Merge all the bed files from the previous step into a final single bed file. <br />
-*Output:* A final combined bed file. <br />
+## Support
 
-## Output
-1. **pgen** folder (contains raw pgen files with the new IDs format: chr:pos:ref:alt) <br />
-   - qc_recoded subfolder (contains pgen files that have been processed through quality control and recoding steps but not yet harmonised.)
-   - qc_recoded_harmonised subfolder (contains pgen files that have been both quality controlled, recoded, and harmonised.)
-2. **bed** folder
-   - qc_recoded_harmonised subfolder (contains bed files that have been harmonised.)
+For issues or questions:
+- Check existing [GitHub Issues](https://github.com/ht-diva/genomics_QC_pipeline/issues)
+- Refer to the original [INTERVAL QC script](https://github.com/ht-diva/pqtl-believe-interval/blob/main/Script_QC_INTERVAL_genomics.R)
+
+
+## Citation
+
+If you use this pipeline, please cite:
+- This pipeline repository

@@ -1,17 +1,20 @@
 run:
   delivery: False
   filter_problematic_snps: True
-  filter_by_INFO_score: True
+  filter_by_imputation_quality: "minimac3" # options: info_score, minimac3, none
 
 # paths
 workspace_path: "results"
 pgen_src_path: 'example'
 pgen_template: 'chr{chrom}.pgen'
 pvar_template: 'chr{chrom}.pvar'
-dest_path: '/exchange/healthds/pQTL/'
-fam_path: ''
-problematic_snps_path: ''
+dest_path: 'destination'
+problematic_snps_path: 'wip/problematic_snps.txt'
 config_file_path: "config/gwaspipe/config_snp_mapping.yml"
+
+## Sample selection - https://www.cog-genomics.org/plink/2.0/filter
+sample_selection_method: 'keep' # options: keep, keep-fam, remove, remove-fam
+id_list_path: ''
 
 plink2_dict:
   mind: 0.1
@@ -19,5 +22,6 @@ plink2_dict:
   hwe: 1e-15
   mac: 10
   export_output_fmt: "bgen-1.2"
+  minimac3-r2-filter: 0.3
 
 INFO_score: "0.7"

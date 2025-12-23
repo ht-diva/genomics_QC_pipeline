@@ -1,7 +1,7 @@
 run:
   delivery: False
   filter_problematic_snps: False
-  filter_by_INFO_score: True
+  filter_by_imputation_quality: "info_score" # options: info_score, minimac3, none
 
 # paths
 workspace_path: "results"
@@ -9,8 +9,11 @@ pgen_src_path: '/processing_data/shared_datasets/plasma_proteome/interval/genoty
 pgen_template: 'impute_dedup_{chrom}_interval.pgen'
 pvar_template: 'impute_dedup_{chrom}_interval.pvar'
 dest_path: '/exchange/healthds/pQTL/INTERVAL/Genetic_QC_files/'
-fam_path: '/exchange/healthds/pQTL/INTERVAL/Genetic_QC_files/cleaned_genotype_INTERVAL.fam'
 problematic_snps_path: ''
+
+## Sample selection - https://www.cog-genomics.org/plink/2.0/filter
+sample_selection_method: 'keep-fam' # options: keep, keep-fam, remove, remove-fam
+id_list_path: '/exchange/healthds/pQTL/INTERVAL/Genetic_QC_files/cleaned_genotype_INTERVAL.fam'
 
 plink2_dict:
   mind: 0.1
@@ -18,5 +21,6 @@ plink2_dict:
   hwe: 1e-15
   mac: 10
   export_output_fmt: "bgen-1.2"
+  minimac3-r2-filter: 0.3
 
 INFO_score: "0.7"

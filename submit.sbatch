@@ -5,7 +5,7 @@
 #SBATCH --output %j_genomics_QC_pipeline.log
 #SBATCH --partition cpuq
 #SBATCH --cpus-per-task 1
-#SBATCH --mem 8G
+#SBATCH --mem 2G
 #SBATCH --time 8:00:00
 
 source ~/.bashrc

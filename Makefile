@@ -77,15 +77,15 @@ pre-commit:
 # ----------------------------------------------------------------------
 project-interval:
 	@echo "interval" > $(PROJECT_FILE)
-	@echo "✅ Project set to 'interval' (config → $(CONFIGFILE))"
+	@echo "✅ Project set to 'interval' "
 
 project-believe:
 	@echo "believe" > $(PROJECT_FILE)
-	@echo "✅ Project set to 'believe' (config → $(CONFIGFILE))"
+	@echo "✅ Project set to 'believe' "
 
 project-%:
 	@echo "$*" > $(PROJECT_FILE)
-	@echo "✅ Project set to '$*' (config → $(CONFIGFILE))"
+	@echo "✅ Project set to '$*' "
 
 # ----------------------------------------------------------------------
 #  Clean up helper (optional)

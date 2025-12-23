@@ -1,7 +1,7 @@
 run:
-  delivery: True
+  delivery: False
   filter_problematic_snps: True
-  filter_by_INFO_score: False
+  filter_by_imputation_quality: 'minimac3' # options: info_score, minimac3, none
 
 # paths
 workspace_path: "results"
@@ -9,8 +9,11 @@ pgen_src_path: '/exchange/healthds/pQTL/BELIEVE/Genetic_QC_files/HDS_BELIEVE_fin
 pgen_template: 'chr{chrom}.pgen'
 pvar_template: 'chr{chrom}.pvar'
 dest_path: '/exchange/healthds/pQTL/BELIEVE/Genetic_QC_files/harmonized'
-fam_path: '/exchange/healthds/pQTL/BELIEVE/Genetic_QC_files/BELIEVE_genotype_final_bed_123456_withoutPCoutliers_mac.fam'
 problematic_snps_path: '/exchange/healthds/pQTL/BELIEVE/problematic_7k_snps/problematic_snps.txt'
+
+## Sample selection - https://www.cog-genomics.org/plink/2.0/filter
+sample_selection_method: 'keep-fam' # options: keep, keep-fam, remove, remove-fam
+id_list_path: '/exchange/healthds/pQTL/BELIEVE/Genetic_QC_files/BELIEVE_genotype_final_bed_123456_withoutPCoutliers_mac.fam'
 
 plink2_dict:
   mind: 0.1
@@ -18,5 +21,6 @@ plink2_dict:
   hwe: 1e-15
   mac: 10
   export_output_fmt: "bgen-1.1"
+  minimac3-r2-filter: 0.3
 
 INFO_score: "0.7"

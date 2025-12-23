@@ -1,82 +1,54 @@
+PGEN2BED_PREFIX = "bed/qc_harmonised/{chrom}_qced_new_id_alleles"
+
+
 rule pgen2bed:
     input:
-        ws_path(
-            "pgen/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.pgen"
-        ),
-        ws_path(
-            "pgen/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.pvar"
-        ),
-        ws_path(
-            "pgen/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.psam"
-        ),
+        rules.update_pgen_alleles.output,
     output:
-        ws_path(
-            "bed/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.bed"
-        ),
-        ws_path(
-            "bed/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.bim"
-        ),
-        ws_path(
-            "bed/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.fam"
-        ),
+        bed=ws_path(PGEN2BED_PREFIX + ".bed"),
+        bim=ws_path(PGEN2BED_PREFIX + ".bim"),
+        fam=ws_path(PGEN2BED_PREFIX + ".fam"),
     container:
         "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
     resources:
         runtime=lambda wc, attempt: attempt * 60,
     params:
-        pfile=ws_path(
-            "pgen/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}"
-        ),
-        prefix=ws_path(
-            "bed/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}"
-        ),
+        pfile=rules.update_pgen_alleles.params.prefix,
+        prefix=ws_path(PGEN2BED_PREFIX),
     shell:
-        """
-        plink2 \
-            --pfile {params.pfile} \
-            --hard-call-threshold 0.49999999 \
-            --ref-allele 'force' {params.pfile}.pvar 4 3 \
-            --alt1-allele {params.pfile}.pvar 5 3 \
-            --make-bed  \
-            --out {params.prefix} \
-            --threads {resources.threads} \
-            --memory 1900 'require'
-        """
+        """plink2 \
+--pfile {params.pfile} \
+--hard-call-threshold 0.49999999 \
+--ref-allele 'force' {params.pfile}.pvar 4 3 \
+--alt1-allele {params.pfile}.pvar 5 3 \
+--make-bed  \
+--out {params.prefix} \
+--threads {resources.threads} \
+--memory 1900 'require'
+"""
 
 
-rule merge_filter_hq_variants_new_id_alleles_bed:
+MERGE_QC_HARMONISED_BED_PREFIX = "bed/qc_harmonised/all_qced_new_id_alleles"
+
+
+rule merge_qc_harmonised_bed:
     input:
-        expand(
-            ws_path(
-                "bed/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.bed"
-            ),
-            chrom=get_chromosomes(),
-        ),
+        expand(rules.pgen2bed.output, chrom=get_chromosomes()),
     output:
-        ws_path(
-            "bed/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all.bed"
-        ),
-        ws_path(
-            "bed/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all.bim"
-        ),
-        ws_path(
-            "bed/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all.fam"
-        ),
-        file_list=ws_path("bed/qc_recoded_harmonised/merge_list_new_id_alleles.txt"),
+        bed=ws_path(MERGE_QC_HARMONISED_BED_PREFIX + ".bed"),
+        bim=ws_path(MERGE_QC_HARMONISED_BED_PREFIX + ".bim"),
+        fam=ws_path(MERGE_QC_HARMONISED_BED_PREFIX + ".fam"),
+        file_list=ws_path("bed/qc_harmonised/merge_list_new_id_alleles.txt"),
     container:
         "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
     resources:
         runtime=lambda wc, attempt: attempt * 60,
     params:
         base_prefix=expand(
-            ws_path(
-                "bed/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_{chrom}.bed"
-            ),
+            rules.pgen2bed.params.prefix + ".bed",
             chrom=get_chromosomes(),
         ),
-        pmerge=ws_path(
-            "bed/qc_recoded_harmonised/impute_recoded_selected_sample_filter_hq_var_new_id_alleles_all"
-        ),
+        pmerge=ws_path(MERGE_QC_HARMONISED_BED_PREFIX),
     shell:
         """
  ls -1 {params.base_prefix} | cut -f1 -d"." > {output.file_list} \
