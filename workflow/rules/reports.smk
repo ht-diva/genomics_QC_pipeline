@@ -132,9 +132,5 @@ rule generate_chromosome_summary_report:
         "docker://ghcr.io/ht-diva/containers/python_ds:406993"
     resources:
         runtime=lambda wc, attempt: attempt * 60,
-    shell:
-        """python workflow/scripts/generate_chromosome_summary_report.py \
---variant-reports {input.variant_reports} \
---sample-reports {input.sample_reports} \
---imputation-reports {input.imputation_reports} \
-> {output}"""
+    script:
+        "../scripts/generate_chromosome_summary_report.py"

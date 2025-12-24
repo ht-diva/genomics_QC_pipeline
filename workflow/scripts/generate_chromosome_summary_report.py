@@ -1,4 +1,4 @@
-import click
+import sys
 import os
 import re
 from collections import defaultdict
@@ -40,12 +40,12 @@ def parse_report_file(report_file):
 
     return metrics
 
-@click.command()
-@click.option('--variant-reports', multiple=True, type=click.Path(), help='Variant filtering reports')
-@click.option('--sample-reports', multiple=True, type=click.Path(), help='Sample filtering reports')
-@click.option('--imputation-reports', multiple=True, type=click.Path(), help='Imputation quality reports')
-def main(variant_reports, sample_reports, imputation_reports):
+def main():
     """Generate a comprehensive summary report for all chromosomes."""
+
+    variant_reports = snakemake.input.variant_reports
+    sample_reports = snakemake.input.sample_reports
+    imputation_reports = snakemake.input.imputation_reports
 
     # Parse all reports
     all_metrics = []
@@ -124,7 +124,7 @@ Total variants removed by imputation quality filtering: {total_imputation_remove
 """
 
     # Write report to stdout
-    click.echo(report)
+    print(report)
 
 if __name__ == '__main__':
     main()
