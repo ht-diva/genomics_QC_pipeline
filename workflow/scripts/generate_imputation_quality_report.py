@@ -2,6 +2,7 @@
 
 import click
 import os
+import sys
 
 def count_variants(pvar_file):
     """Count the number of variants in a pvar file"""
@@ -19,9 +20,11 @@ def count_variants(pvar_file):
 @click.option('--chrom', default='unknown', help='Chromosome number')
 def main(pre_filter_pvar, post_filter_pvar, threshold_used, filtering_method, chrom):
     """Generate an imputation quality filtering report based on the filtering method used."""
+
     # Count variants at each stage
     pre_filter_count = count_variants(pre_filter_pvar)
     post_filter_count = count_variants(post_filter_pvar)
+
     # Calculate differences
     variants_removed = pre_filter_count - post_filter_count
     removal_rate = variants_removed / pre_filter_count if pre_filter_count > 0 else 0
@@ -64,4 +67,16 @@ No imputation quality filtering was applied to this chromosome.
     click.echo(report)
 
 if __name__ == '__main__':
+    # Handle case where filtering-method contains spaces
+    if '--filtering-method' in sys.argv:
+        idx = sys.argv.index('--filtering-method')
+        if idx + 1 < len(sys.argv) and not sys.argv[idx + 1].startswith('--'):
+            # Combine all following arguments until next option
+            filtering_method = []
+            i = idx + 1
+            while i < len(sys.argv) and not sys.argv[i].startswith('--'):
+                filtering_method.append(sys.argv[i])
+                i += 1
+            sys.argv[idx + 1] = ' '.join(filtering_method)
+            del sys.argv[idx + 2:i]
     main()

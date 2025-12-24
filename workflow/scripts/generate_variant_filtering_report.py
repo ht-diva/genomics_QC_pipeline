@@ -2,6 +2,7 @@
 
 import click
 import os
+import sys
 
 def count_variants(pvar_file):
     """Count the number of variants in a pvar file"""
@@ -24,18 +25,19 @@ def count_snps_in_list(snp_list_file):
 @click.option('--problematic-filtered-pvar', required=True, help='Pvar file after problematic SNP filtering')
 @click.option('--final-pvar', required=True, help='Final pvar file after all filtering')
 @click.option('--mirror-snps-list', required=True, help='List of mirror SNPs excluded')
-@click.option('--problematic-snps-list', default='', help='List of problematic SNPs excluded')
+@click.option('--problematic-snps-list', default='', help='List of problematic SNPs excluded (empty if not used)')
 @click.option('--chrom', default='unknown', help='Chromosome number')
 def main(original_pvar, mirror_filtered_pvar, problematic_filtered_pvar, final_pvar,
          mirror_snps_list, problematic_snps_list, chrom):
     """Generate a variant filtering report."""
+
     original_count = count_variants(original_pvar)
     mirror_filtered_count = count_variants(mirror_filtered_pvar)
     problematic_filtered_count = count_variants(problematic_filtered_pvar)
     final_count = count_variants(final_pvar)
 
     mirror_snps_count = count_snps_in_list(mirror_snps_list)
-    problematic_snps_count = count_snps_in_list(problematic_snps_list)
+    problematic_snps_count = count_snps_in_list(problematic_snps_list) if problematic_snps_list else 0
 
     mirror_removed = original_count - mirror_filtered_count
     problematic_removed = mirror_filtered_count - problematic_filtered_count
@@ -69,4 +71,8 @@ def main(original_pvar, mirror_filtered_pvar, problematic_filtered_pvar, final_p
     click.echo(report)
 
 if __name__ == '__main__':
+    if '--problematic-snps-list' in sys.argv:
+        idx = sys.argv.index('--problematic-snps-list')
+        if idx + 1 >= len(sys.argv) or sys.argv[idx + 1].startswith('--'):
+            sys.argv.insert(idx + 1, '')
     main()
