@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import click
 import os
 import re
@@ -15,9 +13,7 @@ def parse_report_file(report_file):
         content = f.read()
 
         # Extract chromosome number from filename
-        chrom_match = re.search(r'chr(\d+|X|Y)', report_file)
-        if not chrom_match:
-            chrom_match = re.search(r'(\d+|X|Y)_', report_file)
+        chrom_match = re.search(r'(\d+|X|Y)(?=_|$)', report_file)
         if chrom_match:
             metrics['chrom'] = chrom_match.group(1)
 
@@ -45,9 +41,9 @@ def parse_report_file(report_file):
     return metrics
 
 @click.command()
-@click.argument('variant_reports', nargs=-1, type=click.Path())
-@click.argument('sample_reports', nargs=-1, type=click.Path())
-@click.argument('imputation_reports', nargs=-1, type=click.Path())
+@click.option('--variant-reports', multiple=True, type=click.Path(), help='Variant filtering reports')
+@click.option('--sample-reports', multiple=True, type=click.Path(), help='Sample filtering reports')
+@click.option('--imputation-reports', multiple=True, type=click.Path(), help='Imputation quality reports')
 def main(variant_reports, sample_reports, imputation_reports):
     """Generate a comprehensive summary report for all chromosomes."""
 
