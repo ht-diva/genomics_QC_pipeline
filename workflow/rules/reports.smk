@@ -24,3 +24,119 @@ rule generate_sample_filtering_report:
                 --chrom {params.chrom} \
                 > {output}
             """
+
+
+rule generate_variant_filtering_report:
+    input:
+        # Input files from different filtering steps
+        original_pvar=rules.select_samples.output.pvar,
+        mirror_filtered_pvar=rules.filter_mirror_snps.output[1],
+        problematic_filtered_pvar=branch(
+            lookup(dpath="run/filter_problematic_snps", within=config),
+            then=rules.filter_problematic_snps.output[1],
+            otherwise=rules.filter_mirror_snps.output[1],
+        ),
+        final_pvar=rules.filter_var.output.pvar,
+        mirror_snps_list=rules.get_mirror_snps.output,
+        problematic_snps_list=branch(
+            lookup(dpath="run/filter_problematic_snps", within=config),
+            then=rules.sanitize_problematic_snps.output,
+            otherwise="",
+        ),
+    output:
+        ws_path("pgen/reports/{chrom}_variant_filtering_report.txt"),
+    container:
+        "docker://ghcr.io/ht-diva/containers/python_ds:406993"
+    resources:
+        runtime=lambda wildcards, attempt: attempt * 60,
+    params:
+        chrom=lambda wildcards: wildcards.chrom,
+    shell:
+        """
+        python workflow/scripts/generate_variant_filtering_report.py \
+            --original-pvar {input.original_pvar} \
+            --mirror-filtered-pvar {input.mirror_filtered_pvar} \
+            --problematic-filtered-pvar {input.problematic_filtered_pvar} \
+            --final-pvar {input.final_pvar} \
+            --mirror-snps-list {input.mirror_snps_list} \
+            --problematic-snps-list {input.problematic_snps_list} \
+            --chrom {params.chrom} \
+            > {output}
+        """
+
+
+rule generate_imputation_quality_report:
+    input:
+        # Input files from different filtering steps
+        pre_filter_pvar=rules.filter_var.output.pvar,
+        post_filter_pvar=branch(
+            lookup(dpath="run/filter_by_imputation_quality", within=config),
+            cases={
+                "none": rules.filter_var.output.pvar,
+                "info_score": rules.filter_hq_variants.output.pvar,
+                "minimac3": rules.filter_by_minimac3.output.pvar,
+            },
+        ),
+    output:
+        ws_path("pgen/reports/{chrom}_imputation_quality_report.txt"),
+    container:
+        "docker://ghcr.io/ht-diva/containers/python_ds:406993"
+    resources:
+        runtime=lambda wc, attempt: attempt * 60,
+    params:
+        chrom=lambda wildcards: wildcards.chrom,
+        threshold_used=branch(
+            lookup(dpath="run/filter_by_imputation_quality", within=config),
+            cases={
+                "none": rules.filter_var.output.pvar,
+                "info_score": config.get("INFO_score"),
+                "minimac3": config.get("plink2_dict").get("minimac3-r2-filter"),
+            },
+        ),
+        filtering_method=branch(
+            lookup(dpath="run/filter_by_imputation_quality", within=config),
+            cases={
+                "none": "none",
+                "info_score": "INFO score filtering",
+                "minimac3": "Minimac3 R2 filtering",
+            },
+        ),
+    shell:
+        """python workflow/scripts/generate_imputation_quality_report.py \
+            --pre-filter-pvar {input.pre_filter_pvar} \
+            --post-filter-pvar {input.post_filter_pvar} \
+            --threshold-used {params.threshold_used} \
+            --filtering-method {params.filtering_method} \
+            --chrom {params.chrom} \
+            > {output}
+        """
+
+
+rule generate_chromosome_summary_report:
+    input:
+        # Collect all chromosome-specific reports
+        variant_reports=expand(
+            "pgen/qc/reports/{chrom}_variant_filtering_report.txt",
+            chrom=get_chromosomes(),
+        ),
+        sample_reports=expand(
+            "pgen/qc/reports/{chrom}_sample_filtering_report.txt",
+            chrom=get_chromosomes(),
+        ),
+        imputation_reports=expand(
+            "pgen/qc/reports/{chrom}_imputation_quality_report.txt",
+            chrom=get_chromosomes(),
+        ),
+    output:
+        ws_path("pgen/qc/reports/all_chromosomes_summary_report.txt"),
+    container:
+        "docker://ghcr.io/ht-diva/containers/python_ds:406993"
+    resources:
+        runtime=lambda wc, attempt: attempt * 60,
+    shell:
+        """python workflow/scripts/generate_chromosome_summary_report.py \
+            --variant-reports {' --variant-reports '.join(input.variant_reports)} \
+            --sample-reports {' --sample-reports '.join(input.sample_reports)} \
+            --imputation-reports {' --imputation-reports '.join(input.imputation_reports)} \
+            > {output}
+        """
