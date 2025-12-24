@@ -65,6 +65,12 @@ def get_final_output():
             ext=["bed", "bim", "fam"],
         )
     ),
+    final_output.extend(
+        expand(
+            rules.generate_sample_filtering_report.output,
+            chrom=get_chromosomes(),
+        )
+    ),
 
     if config.get("run").get("delivery"):
         final_output.append(dest_path("README.txt")),
