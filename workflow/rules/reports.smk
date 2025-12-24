@@ -52,17 +52,16 @@ rule generate_variant_filtering_report:
     params:
         chrom=lambda wildcards: wildcards.chrom,
     shell:
-        """
-        python workflow/scripts/generate_variant_filtering_report.py \
-            --original-pvar {input.original_pvar} \
-            --mirror-filtered-pvar {input.mirror_filtered_pvar} \
-            --problematic-filtered-pvar {input.problematic_filtered_pvar} \
-            --final-pvar {input.final_pvar} \
-            --mirror-snps-list {input.mirror_snps_list} \
-            --problematic-snps-list {input.problematic_snps_list} \
-            --chrom {params.chrom} \
-            > {output}
-        """
+        """python workflow/scripts/generate_variant_filtering_report.py \
+--original-pvar {input.original_pvar} \
+--mirror-filtered-pvar {input.mirror_filtered_pvar} \
+--problematic-filtered-pvar {input.problematic_filtered_pvar} \
+--final-pvar {input.final_pvar} \
+--mirror-snps-list {input.mirror_snps_list} \
+--problematic-snps-list {input.problematic_snps_list} \
+--chrom {params.chrom} \
+> {output}
+"""
 
 
 rule generate_imputation_quality_report:
@@ -103,28 +102,28 @@ rule generate_imputation_quality_report:
         ),
     shell:
         """python workflow/scripts/generate_imputation_quality_report.py \
-            --pre-filter-pvar {input.pre_filter_pvar} \
-            --post-filter-pvar {input.post_filter_pvar} \
-            --threshold-used {params.threshold_used} \
-            --filtering-method {params.filtering_method} \
-            --chrom {params.chrom} \
-            > {output}
-        """
+--pre-filter-pvar {input.pre_filter_pvar} \
+--post-filter-pvar {input.post_filter_pvar} \
+--threshold-used {params.threshold_used} \
+--filtering-method {params.filtering_method} \
+--chrom {params.chrom} \
+> {output}
+"""
 
 
 rule generate_chromosome_summary_report:
     input:
         # Collect all chromosome-specific reports
         variant_reports=expand(
-            "pgen/qc/reports/{chrom}_variant_filtering_report.txt",
+            rules.generate_sample_filtering_report.output,
             chrom=get_chromosomes(),
         ),
         sample_reports=expand(
-            "pgen/qc/reports/{chrom}_sample_filtering_report.txt",
+            rules.generate_variant_filtering_report.output,
             chrom=get_chromosomes(),
         ),
         imputation_reports=expand(
-            "pgen/qc/reports/{chrom}_imputation_quality_report.txt",
+            rules.generate_imputation_quality_report.output,
             chrom=get_chromosomes(),
         ),
     output:
@@ -135,8 +134,7 @@ rule generate_chromosome_summary_report:
         runtime=lambda wc, attempt: attempt * 60,
     shell:
         """python workflow/scripts/generate_chromosome_summary_report.py \
-            --variant-reports {' --variant-reports '.join(input.variant_reports)} \
-            --sample-reports {' --sample-reports '.join(input.sample_reports)} \
-            --imputation-reports {' --imputation-reports '.join(input.imputation_reports)} \
-            > {output}
-        """
+--variant-reports {input.variant_reports} \
+--sample-reports {input.sample_reports} \
+--imputation-reports {input.imputation_reports} \
+> {output}"""

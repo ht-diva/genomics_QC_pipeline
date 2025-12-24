@@ -16,6 +16,8 @@ def parse_report_file(report_file):
 
         # Extract chromosome number from filename
         chrom_match = re.search(r'chr(\d+|X|Y)', report_file)
+        if not chrom_match:
+            chrom_match = re.search(r'(\d+|X|Y)_', report_file)
         if chrom_match:
             metrics['chrom'] = chrom_match.group(1)
 
@@ -36,16 +38,16 @@ def parse_report_file(report_file):
         # Parse imputation quality report
         elif 'imputation_quality_report' in report_file:
             metrics['type'] = 'imputation'
-            metrics['initial_variants'] = int(re.search(r'Variants before imputation filtering: (\d+)', content).group(1))
+            metrics['initial_variants'] = int(re.search(r'Total variants: (\d+)', content).group(1))
             metrics['final_variants'] = int(re.search(r'Final variant count: (\d+)', content).group(1))
-            metrics['variants_removed'] = int(re.search(r'Total variants removed: (\d+)', content).group(1))
+            metrics['variants_removed'] = int(re.search(r'Total variants removed by imputation quality filtering: (\d+)', content).group(1))
 
     return metrics
 
 @click.command()
-@click.option('--variant-reports', multiple=True, required=True, help='Variant filtering reports')
-@click.option('--sample-reports', multiple=True, required=True, help='Sample filtering reports')
-@click.option('--imputation-reports', multiple=True, required=True, help='Imputation quality reports')
+@click.argument('variant_reports', nargs=-1, type=click.Path())
+@click.argument('sample_reports', nargs=-1, type=click.Path())
+@click.argument('imputation_reports', nargs=-1, type=click.Path())
 def main(variant_reports, sample_reports, imputation_reports):
     """Generate a comprehensive summary report for all chromosomes."""
 

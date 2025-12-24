@@ -65,24 +65,7 @@ def get_final_output():
             ext=["bed", "bim", "fam"],
         )
     ),
-    final_output.extend(
-        expand(
-            rules.generate_sample_filtering_report.output,
-            chrom=get_chromosomes(),
-        )
-    ),
-    final_output.extend(
-        expand(
-            rules.generate_variant_filtering_report.output,
-            chrom=get_chromosomes(),
-        )
-    ),
-    final_output.extend(
-        expand(
-            rules.generate_imputation_quality_report.output,
-            chrom=get_chromosomes(),
-        )
-    ),
+    final_output.append(rules.generate_chromosome_summary_report.output)
 
     if config.get("run").get("delivery"):
         final_output.append(dest_path("README.txt")),
