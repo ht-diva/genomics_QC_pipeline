@@ -36,7 +36,15 @@ def parse_report_file(report_file):
             metrics['type'] = 'imputation'
             metrics['initial_variants'] = int(re.search(r'Total variants: (\d+)', content).group(1))
             metrics['final_variants'] = int(re.search(r'Final variant count: (\d+)', content).group(1))
-            metrics['variants_removed'] = int(re.search(r'Total variants removed by imputation quality filtering: (\d+)', content).group(1))
+
+            # Try different patterns for variants removed
+            variants_removed_match = re.search(r'Total variants removed: (\d+)', content)
+            if not variants_removed_match:
+                variants_removed_match = re.search(r'Variants removed: (\d+)', content)
+            if variants_removed_match:
+                metrics['variants_removed'] = int(variants_removed_match.group(1))
+            else:
+                metrics['variants_removed'] = 0
 
     return metrics
 
@@ -50,9 +58,13 @@ def main():
     # Parse all reports
     all_metrics = []
     for report_file in variant_reports + sample_reports + imputation_reports:
-        metrics = parse_report_file(report_file)
-        if metrics:
-            all_metrics.append(metrics)
+        try:
+            metrics = parse_report_file(report_file)
+            if metrics:
+                all_metrics.append(metrics)
+        except Exception as e:
+            print(f"Warning: Could not parse report file {report_file}: {str(e)}")
+            continue
 
     # Organize data by chromosome
     chrom_data = defaultdict(lambda: {'variant': {}, 'sample': {}, 'imputation': {}})

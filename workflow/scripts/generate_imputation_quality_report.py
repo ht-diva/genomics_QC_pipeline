@@ -41,7 +41,7 @@ No imputation quality filtering was applied to this chromosome.
 
 2. SUMMARY
    No variants were removed by imputation quality filtering.
-   Final variant count remains: {post_filter_count:,}
+   Final variant count: {post_filter_count:,}
 """
     else:
         report = f"""Imputation Quality Filtering Report for Chromosome {chrom}
@@ -55,8 +55,8 @@ No imputation quality filtering was applied to this chromosome.
    Threshold used: {threshold_used}
 
 3. VARIANTS AFTER FILTERING
-   Total variants: {post_filter_count:,}
-   Variants removed: {variants_removed:,} ({removal_rate:.1%})
+   Total variants after filtering: {post_filter_count:,}
+   Total variants removed: {variants_removed:,} ({removal_rate:.1%})
 
 4. SUMMARY
    Final variant count: {post_filter_count:,}
