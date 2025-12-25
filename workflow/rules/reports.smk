@@ -127,7 +127,7 @@ rule generate_chromosome_summary_report:
             chrom=get_chromosomes(),
         ),
     output:
-        ws_path("pgen/qc/reports/all_chromosomes_summary_report.txt"),
+        ws_path("pgen/reports/all_chromosomes_summary_report.txt"),
     container:
         "docker://ghcr.io/ht-diva/containers/python_ds:406993"
     resources:

@@ -54,6 +54,7 @@ def main():
     variant_reports = snakemake.input.variant_reports
     sample_reports = snakemake.input.sample_reports
     imputation_reports = snakemake.input.imputation_reports
+    output_file = snakemake.output[0]
 
     # Parse all reports
     all_metrics = []
@@ -135,8 +136,9 @@ Total samples removed: {total_samples_removed:,} ({total_samples_removed/total_i
 Total variants removed by imputation quality filtering: {total_imputation_removed:,}
 """
 
-    # Write report to stdout
-    print(report)
+    # Write report to Snakemake output file
+    with open(output_file, 'w') as f:
+        f.write(report)
 
 if __name__ == '__main__':
     main()
