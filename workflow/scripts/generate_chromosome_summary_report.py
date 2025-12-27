@@ -2,14 +2,16 @@ import click
 import os
 import re
 from collections import defaultdict
+from pathlib import Path
 
 def parse_report_file(report_file):
     """Parse a report file and extract key metrics"""
-    if not os.path.exists(report_file):
+    report_path = Path(report_file)
+    if not report_path.exists():
         return None
 
     metrics = {}
-    with open(report_file, 'r') as f:
+    with open(report_path, 'r') as f:
         content = f.read()
         content = content.replace(",", "")
 
@@ -48,6 +50,7 @@ def parse_report_file(report_file):
                 metrics['variants_removed'] = 0
 
     return metrics
+
 @click.command()
 @click.argument('output-file', nargs=1, type=click.Path())
 @click.argument('reports', nargs=-1, type=click.Path())
@@ -97,7 +100,7 @@ def main(output_file, reports):
         initial_samples = final_samples = samples_removed = 0
         msg = "No sample filtering reports found."
 
-    # Generate summary report
+    # Generate text-based report
     report = """COMPREHENSIVE QC SUMMARY REPORT - ALL CHROMOSOMES
 ================================================
 
@@ -105,9 +108,16 @@ def main(output_file, reports):
 
     # Summary table header
     report += """
-CHROM | INITIAL VARIANTS | FINAL VARIANTS | VARIANTS REMOVED | INITIAL SAMPLES | FINAL SAMPLES | SAMPLES REMOVED | IMPUTATION VARIANTS REMOVED
-------|------------------|----------------|------------------|-----------------|---------------|-----------------|-------------------------------
+CHROM | INITIAL SAMPLES | FINAL SAMPLES | SAMPLES REMOVED | INITIAL VARIANTS | FINAL VARIANTS | QC VARIANTS REMOVED | IMPUTATION VARIANTS REMOVED
+------|-----------------|---------------|-----------------|------------------|----------------|---------------------|-------------------------------
 """
+
+    # Generate TSV filename by replacing extension
+    output_path = Path(output_file)
+    tsv_output = output_path.with_suffix('.tsv')
+
+    # Generate TSV content
+    tsv_content = "CHROM\tINITIAL_SAMPLES\tFINAL_SAMPLES\tSAMPLES_REMOVED\tINITIAL_VARIANTS\tFINAL_VARIANTS\tQC_VARIANTS_REMOVED\tIMPUTATION_VARIANTS_REMOVED\n"
 
     # Process each chromosome
     for chrom in sorted(chrom_data.keys(), key=lambda x: (int(x) if x.isdigit() else float('inf'), x)):
@@ -115,46 +125,54 @@ CHROM | INITIAL VARIANTS | FINAL VARIANTS | VARIANTS REMOVED | INITIAL SAMPLES |
 
         # Get metrics with defaults
         initial_variants = data['variant'].get('initial_variants', 0)
-        final_variants = data['variant'].get('final_variants', 0)
-        variants_removed = data['variant'].get('variants_removed', 0)
-
+        final_variants = data['imputation'].get('final_variants', 0)
+        qc_removed = data['variant'].get('variants_removed', 0)
         imputation_removed = data['imputation'].get('variants_removed', 0)
 
-        # Add row to table
+        # Add row to text report
         report += f"""\
-{chrom:5} | {initial_variants:16,} | {final_variants:14,} | {variants_removed:16,} | {initial_samples:15,} | {final_samples:13,} | {samples_removed:15,} | {imputation_removed:27,}
+{chrom:5} | {initial_samples:15,} | {final_samples:13,} | {samples_removed:15,} |{initial_variants:17,} | {final_variants:14,} | {qc_removed:19,} | {imputation_removed:27,}
 """
 
-    # Add overall summary
+        # Add row to TSV
+        tsv_content += f"{chrom}\t{initial_samples}\t{final_samples}\t{samples_removed}\t{initial_variants}\t{final_variants}\t{qc_removed}\t{imputation_removed}\n"
+    # Add overall summary to text report
     report += """
 
 OVERALL SUMMARY
 ===============
 """
-
     # Calculate totals
     total_initial_variants = sum(d['variant'].get('initial_variants', 0) for d in chrom_data.values())
-    total_final_variants = sum(d['variant'].get('final_variants', 0) for d in chrom_data.values())
-    total_variants_removed = sum(d['variant'].get('variants_removed', 0) for d in chrom_data.values())
-
+    total_final_variants = sum(d['imputation'].get('final_variants', 0) for d in chrom_data.values())
+    total_variants_removed = sum(d['variant'].get('variants_removed', 0) + d['imputation'].get('variants_removed', 0) for d in chrom_data.values())
+    total_qc_variants_removed = sum(d['variant'].get('variants_removed', 0) for d in chrom_data.values())
     total_imputation_removed = sum(d['imputation'].get('variants_removed', 0) for d in chrom_data.values())
 
     report += f"""
 Sample counts ({msg}):
+-------------
 Initial samples: {initial_samples:,}
 Final samples: {final_samples:,}
 Samples removed: {samples_removed:,} ({samples_removed/initial_samples:.1%})
 
-Total initial variants across all chromosomes: {total_initial_variants:,}
-Total final variants after all filtering: {total_final_variants:,}
-Total variants removed: {total_variants_removed:,} ({total_variants_removed/total_initial_variants:.1%})
+Variant counts across all chromosomes:
+-------------------------------------
+Initial variants: {total_initial_variants:,}
+Final variants after all filtering: {total_final_variants:,}
 
+Total variants removed: {total_variants_removed:,} ({total_variants_removed/total_initial_variants:.1%})
+Total variants removed by QC filtering: {total_qc_variants_removed:,}
 Total variants removed by imputation quality filtering: {total_imputation_removed:,}
 """
 
-    # Write report to Snakemake output file
-    with open(output_file, 'w') as f:
+    # Write text report to main output file
+    with open(output_path, 'w') as f:
         f.write(report)
+
+    # Write TSV file
+    with open(tsv_output, 'w') as f:
+        f.write(tsv_content)
 
 if __name__ == '__main__':
     main()

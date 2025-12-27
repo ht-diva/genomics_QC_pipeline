@@ -127,14 +127,15 @@ rule generate_chromosome_summary_report:
             chrom=get_chromosomes(),
         ),
     output:
-        ws_path("pgen/reports/all_chromosomes_summary_report.txt"),
+        txt=ws_path("pgen/reports/all_chromosomes_summary_report.txt"),
+        tsv=ws_path("pgen/reports/all_chromosomes_summary_report.tsv"),
     container:
         "docker://ghcr.io/ht-diva/containers/python_ds:406993"
     resources:
         runtime=lambda wc, attempt: attempt * 60,
     shell:
         """python workflow/scripts/generate_chromosome_summary_report.py \
-{output.ws_path} \
+{output.txt} \
 {input.sample_reports} \
 {input.variant_reports} \
 {input.imputation_reports} \

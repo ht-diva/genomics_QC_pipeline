@@ -52,16 +52,16 @@ def main(original_pvar, mirror_filtered_pvar, problematic_filtered_pvar, final_p
 2. MIRROR SNP FILTERING
    Mirror SNPs excluded: {mirror_snps_count:,}
    Variants after mirror filtering: {mirror_filtered_count:,}
-   Variants removed in this step: {mirror_removed:,} ({mirror_removed/original_count:.1%})
+   Variants removed after mirror filtering: {mirror_removed:,} ({mirror_removed/original_count:.1%})
 
 3. PROBLEMATIC SNP FILTERING
    Problematic SNPs excluded: {problematic_snps_count:,}
    Variants after problematic filtering: {problematic_filtered_count:,}
-   Variants removed in this step: {problematic_removed:,} ({problematic_removed/mirror_filtered_count:.1%})
+   Variants removed after problematic filtering: {problematic_removed:,} ({problematic_removed/mirror_filtered_count:.1%})
 
 4. QUALITY CONTROL FILTERING
    Variants after QC filtering: {final_count:,}
-   Variants removed in this step: {qc_removed:,} ({qc_removed/problematic_filtered_count:.1%})
+   Variants removed after QC filtering: {qc_removed:,} ({qc_removed/problematic_filtered_count:.1%})
 
 5. SUMMARY
    Total variants removed: {original_count - final_count:,} ({1 - (final_count/original_count):.1%})
