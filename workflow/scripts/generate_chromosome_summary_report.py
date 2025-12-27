@@ -1,4 +1,4 @@
-import sys
+import click
 import os
 import re
 from collections import defaultdict
@@ -11,6 +11,7 @@ def parse_report_file(report_file):
     metrics = {}
     with open(report_file, 'r') as f:
         content = f.read()
+        content = content.replace(",", "")
 
         # Extract chromosome number from filename
         chrom_match = re.search(r'(\d+|X|Y)(?=_|$)', report_file)
@@ -47,18 +48,15 @@ def parse_report_file(report_file):
                 metrics['variants_removed'] = 0
 
     return metrics
-
-def main():
+@click.command()
+@click.argument('output-file', nargs=1, type=click.Path())
+@click.argument('reports', nargs=-1, type=click.Path())
+def main(output_file, reports):
     """Generate a comprehensive summary report for all chromosomes."""
-
-    variant_reports = snakemake.input.variant_reports
-    sample_reports = snakemake.input.sample_reports
-    imputation_reports = snakemake.input.imputation_reports
-    output_file = snakemake.output[0]
 
     # Parse all reports
     all_metrics = []
-    for report_file in variant_reports + sample_reports + imputation_reports:
+    for report_file in reports:
         try:
             metrics = parse_report_file(report_file)
             if metrics:
@@ -73,6 +71,31 @@ def main():
         chrom = metric['chrom']
         report_type = metric['type']
         chrom_data[chrom][report_type] = metric
+
+    # Check sample consistency across chromosomes
+    sample_values = []
+    for chrom, data in chrom_data.items():
+        if 'sample' in data and data['sample']:
+            sample_values.append((
+                data['sample'].get('initial_samples', 0),
+                data['sample'].get('final_samples', 0),
+                data['sample'].get('samples_removed', 0)
+            ))
+
+    # Verify all sample values are the same
+    if sample_values:
+        first_values = sample_values[0]
+        all_same = all(v == first_values for v in sample_values)
+
+        initial_samples, final_samples, samples_removed = first_values
+        if all_same:
+            msg = "Sample counts are consistent across all chromosomes"
+        else:
+            msg ="Warning: Sample counts differ between chromosomes. Using first chromosome's values."
+
+    else:
+        initial_samples = final_samples = samples_removed = 0
+        msg = "No sample filtering reports found."
 
     # Generate summary report
     report = """COMPREHENSIVE QC SUMMARY REPORT - ALL CHROMOSOMES
@@ -95,10 +118,6 @@ CHROM | INITIAL VARIANTS | FINAL VARIANTS | VARIANTS REMOVED | INITIAL SAMPLES |
         final_variants = data['variant'].get('final_variants', 0)
         variants_removed = data['variant'].get('variants_removed', 0)
 
-        initial_samples = data['sample'].get('initial_samples', 0)
-        final_samples = data['sample'].get('final_samples', 0)
-        samples_removed = data['sample'].get('samples_removed', 0)
-
         imputation_removed = data['imputation'].get('variants_removed', 0)
 
         # Add row to table
@@ -118,20 +137,17 @@ OVERALL SUMMARY
     total_final_variants = sum(d['variant'].get('final_variants', 0) for d in chrom_data.values())
     total_variants_removed = sum(d['variant'].get('variants_removed', 0) for d in chrom_data.values())
 
-    total_initial_samples = sum(d['sample'].get('initial_samples', 0) for d in chrom_data.values())
-    total_final_samples = sum(d['sample'].get('final_samples', 0) for d in chrom_data.values())
-    total_samples_removed = sum(d['sample'].get('samples_removed', 0) for d in chrom_data.values())
-
     total_imputation_removed = sum(d['imputation'].get('variants_removed', 0) for d in chrom_data.values())
 
     report += f"""
+Sample counts ({msg}):
+Initial samples: {initial_samples:,}
+Final samples: {final_samples:,}
+Samples removed: {samples_removed:,} ({samples_removed/initial_samples:.1%})
+
 Total initial variants across all chromosomes: {total_initial_variants:,}
 Total final variants after all filtering: {total_final_variants:,}
 Total variants removed: {total_variants_removed:,} ({total_variants_removed/total_initial_variants:.1%})
-
-Total initial samples: {total_initial_samples:,}
-Total final samples: {total_final_samples:,}
-Total samples removed: {total_samples_removed:,} ({total_samples_removed/total_initial_samples:.1%})
 
 Total variants removed by imputation quality filtering: {total_imputation_removed:,}
 """
