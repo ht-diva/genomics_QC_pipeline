@@ -1,8 +1,9 @@
-import click
-import os
 import re
 from collections import defaultdict
 from pathlib import Path
+
+import click
+
 
 def parse_report_file(report_file):
     """Parse a report file and extract key metrics"""
@@ -51,6 +52,7 @@ def parse_report_file(report_file):
 
     return metrics
 
+
 @click.command()
 @click.argument('output-file', nargs=1, type=click.Path())
 @click.argument('reports', nargs=-1, type=click.Path())
@@ -94,7 +96,7 @@ def main(output_file, reports):
         if all_same:
             msg = "Sample counts are consistent across all chromosomes"
         else:
-            msg ="Warning: Sample counts differ between chromosomes. Using first chromosome's values."
+            msg = "Warning: Sample counts differ between chromosomes. Using first chromosome's values."
 
     else:
         initial_samples = final_samples = samples_removed = 0
@@ -145,7 +147,9 @@ OVERALL SUMMARY
     # Calculate totals
     total_initial_variants = sum(d['variant'].get('initial_variants', 0) for d in chrom_data.values())
     total_final_variants = sum(d['imputation'].get('final_variants', 0) for d in chrom_data.values())
-    total_variants_removed = sum(d['variant'].get('variants_removed', 0) + d['imputation'].get('variants_removed', 0) for d in chrom_data.values())
+    total_variants_removed = sum(
+        d['variant'].get('variants_removed', 0) + d['imputation'].get('variants_removed', 0) for d in
+        chrom_data.values())
     total_qc_variants_removed = sum(d['variant'].get('variants_removed', 0) for d in chrom_data.values())
     total_imputation_removed = sum(d['imputation'].get('variants_removed', 0) for d in chrom_data.values())
 
@@ -154,14 +158,14 @@ Sample counts ({msg}):
 -------------
 Initial samples: {initial_samples:,}
 Final samples: {final_samples:,}
-Samples removed: {samples_removed:,} ({samples_removed/initial_samples:.1%})
+Samples removed: {samples_removed:,} ({samples_removed / initial_samples:.1%})
 
 Variant counts across all chromosomes:
 -------------------------------------
 Initial variants: {total_initial_variants:,}
 Final variants after all filtering: {total_final_variants:,}
 
-Total variants removed: {total_variants_removed:,} ({total_variants_removed/total_initial_variants:.1%})
+Total variants removed: {total_variants_removed:,} ({total_variants_removed / total_initial_variants:.1%})
 Total variants removed by QC filtering: {total_qc_variants_removed:,}
 Total variants removed by imputation quality filtering: {total_imputation_removed:,}
 """
@@ -173,6 +177,7 @@ Total variants removed by imputation quality filtering: {total_imputation_remove
     # Write TSV file
     with open(tsv_output, 'w') as f:
         f.write(tsv_content)
+
 
 if __name__ == '__main__':
     main()

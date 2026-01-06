@@ -1,6 +1,6 @@
-import pandas as pd
 import click
-from pathlib import Path
+import pandas as pd
+
 
 @click.command()
 @click.option('--input_file', type=click.Path(exists=True), required=True, help='Path to the TSV file (can be gzipped)')
@@ -40,6 +40,7 @@ def main(input_file, column, output_file):
             f.write(f"{pair[0]}\n{pair[1]}\n")
 
     click.echo(f"Mirror SNPID pairs written to 'mirror_snp_pairs.txt'.")
+
 
 if __name__ == "__main__":
     main()

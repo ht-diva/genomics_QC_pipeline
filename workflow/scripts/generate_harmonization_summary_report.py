@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
+import re
 import sys
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
-import re
 
 import click
+
+
 def parse_plink_log(log_file: str) -> dict | None:
     """Parse PLINK2 log file and extract key information.
 
@@ -55,10 +57,12 @@ def parse_plink_log(log_file: str) -> dict | None:
 
     return metrics if metrics['type'] else None
 
+
 def _extract_count(line: str) -> int:
     """Helper function to extract count from log line."""
     match = re.search(r'\d+', line.split(':')[1])
     return int(match.group()) if match else 0
+
 
 def write_report_section(file, title: str, metrics: dict, section_type: str) -> None:
     """Write a formatted section to the report file."""
@@ -74,6 +78,7 @@ def write_report_section(file, title: str, metrics: dict, section_type: str) -> 
         file.write("\nErrors:\n" + "\n".join(metrics['errors']) + "\n")
     if metrics['warnings']:
         file.write("\nWarnings:\n" + "\n".join(metrics['warnings']) + "\n")
+
 
 @click.command()
 @click.argument('output-file', nargs=1, type=click.Path())
@@ -115,5 +120,7 @@ def generate_report(output_file: str, logs: tuple[str]) -> None:
         f.write(f"\n=== Summary Statistics ===\n")
         f.write(f"Report generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
         f.write(f"Total chromosomes processed: {len(chrom_data)}\n")
+
+
 if __name__ == "__main__":
     generate_report()

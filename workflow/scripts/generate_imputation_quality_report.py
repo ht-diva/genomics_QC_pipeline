@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
-import click
 import os
 import sys
+
+import click
+
 
 def count_variants(pvar_file):
     """Count the number of variants in a pvar file"""
@@ -11,6 +13,7 @@ def count_variants(pvar_file):
     with open(pvar_file, 'r') as f:
         next(f)  # Skip header
         return sum(1 for _ in f)
+
 
 @click.command()
 @click.option('--pre-filter-pvar', required=True, help='Pvar file before imputation filtering')
@@ -65,6 +68,7 @@ No imputation quality filtering was applied to this chromosome.
 
     # Write report to stdout
     click.echo(report)
+
 
 if __name__ == '__main__':
     # Handle case where filtering-method contains spaces

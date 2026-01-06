@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 
-import click
 import os
+
+import click
+
 
 def count_samples(psam_file):
     """Count the number of samples in a psam file"""
@@ -11,12 +13,14 @@ def count_samples(psam_file):
         next(f)  # Skip header
         return sum(1 for _ in f)
 
+
 def count_ids_in_list(id_list_file):
     """Count IDs in a sample list file"""
     if not id_list_file or not os.path.exists(id_list_file):
         return 0
     with open(id_list_file, 'r') as f:
         return sum(1 for _ in f)
+
 
 @click.command()
 @click.option('--original-psam', required=True, help='Original psam file before filtering')
@@ -55,7 +59,7 @@ def main(original_psam, filtered_psam, id_list, method, mind, chrom):
    Filtering method: {method_description}
    Number of IDs in list: {id_list_count:,}
    Samples after selection: {filtered_count:,}
-   Samples removed in this step: {samples_removed:,} ({samples_removed/original_count:.1%})
+   Samples removed in this step: {samples_removed:,} ({samples_removed / original_count:.1%})
 
 3. MIND FILTERING
    Minimum genotype call rate threshold: {mind}
@@ -63,11 +67,12 @@ def main(original_psam, filtered_psam, id_list, method, mind, chrom):
 
 4. SUMMARY
    Final sample count: {filtered_count:,}
-   Total samples removed: {samples_removed:,} ({samples_removed/original_count:.1%})
+   Total samples removed: {samples_removed:,} ({samples_removed / original_count:.1%})
 """
 
     # Write report to stdout
     click.echo(report)
+
 
 if __name__ == '__main__':
     main()
