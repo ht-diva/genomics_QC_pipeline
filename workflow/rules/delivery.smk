@@ -28,55 +28,7 @@ rule sync_header_info:
         """rsync -rlptoDvz --chmod "D755,F644" {input} {params.folder}"""
 
 
-# rule sync_pfiles_qc_recoded_c:
-#     input:
-#         pgen_c=ws_path(
-#             "pgen/qc_recoded/impute_recoded_selected_sample_filter_hq_var_{chrom}.pgen"
-#         ),
-#         pvar_c=ws_path(
-#             "pgen/qc_recoded/impute_recoded_selected_sample_filter_hq_var_{chrom}.pvar"
-#         ),
-#         psam_c=ws_path(
-#             "pgen/qc_recoded/impute_recoded_selected_sample_filter_hq_var_{chrom}.psam"
-#         ),
-#     output:
-#         touch(dest_path("pgen/.qc_recoded_{chrom}_delivery.done")),
-#     params:
-#         folder=dest_path("pgen/qc_recoded/"),
-#     resources:
-#         runtime=lambda wc, attempt: attempt * 90,
-#     shell:
-#         """mkdir -p {params.folder} && \
-#         rsync -rlptoDvz --chmod "D755,F644" {input.pgen_c} {params.folder} && \
-#         rsync -rlptoDvz --chmod "D755,F644" {input.pvar_c} {params.folder} && \
-#         rsync -rlptoDvz --chmod "D755,F644" {input.psam_c} {params.folder}"""
-#
-#
-# rule sync_pfiles_qc_recoded_all:
-#     input:
-#         pgen_a=ws_path(
-#             "pgen/qc_recoded/impute_recoded_selected_sample_filter_hq_var_all.pgen"
-#         ),
-#         pvar_a=ws_path(
-#             "pgen/qc_recoded/impute_recoded_selected_sample_filter_hq_var_all.pvar"
-#         ),
-#         psam_a=ws_path(
-#             "pgen/qc_recoded/impute_recoded_selected_sample_filter_hq_var_all.psam"
-#         ),
-#     output:
-#         touch(dest_path("pgen/.qc_recoded_all_delivery.done")),
-#     params:
-#         folder=dest_path("pgen/qc_recoded/"),
-#     resources:
-#         runtime=lambda wc, attempt: attempt * 120,
-#     shell:
-#         """mkdir -p {params.folder} && \
-#         rsync -rlptoDvz --chmod "D755,F644" {input.pgen_a} {params.folder} && \
-#         rsync -rlptoDvz --chmod "D755,F644" {input.pvar_a} {params.folder} && \
-#         rsync -rlptoDvz --chmod "D755,F644" {input.psam_a} {params.folder} """
-
-
-rule sync_pfiles_qc_recoded_harmonised_c:
+rule sync_pfiles_qc_harmonised_c:
     input:
         pgen_c=rules.update_pgen_alleles.output.pgen,
         pvar_c=rules.update_pgen_alleles.output.pvar,
@@ -94,7 +46,7 @@ rule sync_pfiles_qc_recoded_harmonised_c:
         rsync -rlptoDvz --chmod "D755,F644" {input.psam_c} {params.folder}"""
 
 
-rule sync_pfiles_qc_recoded_harmonised_all:
+rule sync_pfiles_qc_harmonised_all:
     input:
         pgen_a=rules.merge_qc_harmonised_pgen.output.pgen,
         pvar_a=rules.merge_qc_harmonised_pgen.output.pvar,
@@ -112,7 +64,7 @@ rule sync_pfiles_qc_recoded_harmonised_all:
         rsync -rlptoDvz --chmod "D755,F644" {input.psam_a} {params.folder} """
 
 
-rule sync_pfiles_qc_recoded_harmonised_all_freq:
+rule sync_pfiles_qc_harmonised_all_freq:
     input:
         afreq=rules.freq_qc_harmonised_pgen.output.afreq,
     output:
@@ -162,11 +114,28 @@ rule sync_bedfiles_all:
         rsync -rlptoDvz --chmod "D755,F644" {input.fam_a} {params.folder}"""
 
 
+rule sync_reports:
+    input:
+        filtering_txt=rules.generate_chromosome_summary_report.output.txt,
+        filtering_tsv=rules.generate_chromosome_summary_report.output.tsv,
+        harmonization=rules.generate_harmonization_summary_report.output.report,
+    output:
+        touch(dest_path("pgen/reports/.reports.done")),
+    params:
+        folder=dest_path("pgen/reports/"),
+    resources:
+        runtime=lambda wc, attempt: attempt * 120,
+    shell:
+        """mkdir -p {params.folder} && \
+        rsync -rlptoDvz --chmod "D755,F644" {input.filtering_txt} {params.folder} && \
+        rsync -rlptoDvz --chmod "D755,F644" {input.filtering_tsv} {params.folder} && \
+        rsync -rlptoDvz --chmod "D755,F644" {input.harmonization} {params.folder}"""
+
+
 rule write_readme:
     input:
         rules.sync_tables.output,
-        #rules.sync_pfiles_qc_recoded_all.output,
-        rules.sync_pfiles_qc_recoded_harmonised_all.output,
+        rules.sync_pfiles_qc_harmonised_all.output,
         rules.sync_bedfiles_all.output,
     output:
         dest_path("README.txt"),

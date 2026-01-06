@@ -127,8 +127,8 @@ rule generate_chromosome_summary_report:
             chrom=get_chromosomes(),
         ),
     output:
-        txt=ws_path("pgen/reports/all_chromosomes_summary_report.txt"),
-        tsv=ws_path("pgen/reports/all_chromosomes_summary_report.tsv"),
+        txt=ws_path("pgen/reports/all_chromosomes_filtering_summary_report.txt"),
+        tsv=ws_path("pgen/reports/all_chromosomes_filtering_summary_report.tsv"),
     container:
         "docker://ghcr.io/ht-diva/containers/python_ds:406993"
     resources:
@@ -139,4 +139,24 @@ rule generate_chromosome_summary_report:
 {input.sample_reports} \
 {input.variant_reports} \
 {input.imputation_reports} \
+"""
+
+
+rule generate_harmonization_summary_report:
+    input:
+        update_id_log=expand(
+            rules.update_pgen_id.log,
+            chrom=get_chromosomes(),
+        ),
+        update_alleles_log=expand(
+            rules.update_pgen_alleles.log,
+            chrom=get_chromosomes(),
+        ),
+    output:
+        report=ws_path("pgen/reports/all_chromosomes_harmonization_summary_report.txt"),
+    shell:
+        """python workflow/scripts/generate_harmonization_summary_report.py \
+{output.report} \
+{input.update_id_log} \
+{input.update_alleles_log} \
 """

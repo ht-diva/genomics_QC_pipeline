@@ -81,7 +81,11 @@ results/
 │   ├── *_impute.info
 │   ├── pseudo_biallelic.txt
 │   ├── qc_harmonised/   # Fully quality-controlled, harmonized PGEN files
-│   └── recode_rsid.txt
+│   ├── recode_rsid.txt
+│   └── reports/
+│       ├── all_chromosomes_filtering_summary_report.txt
+│       ├── all_chromosomes_filtering_summary_report.tsv
+│       └── all_chromosomes_harmonization_summary_report.txt
 └── README.txt
 ```
 
@@ -112,6 +116,7 @@ results/
 
 ## Workflow example
 
+This graph illustrates the progression of the workflow from the input files to the final outputs. For simplicity, the workflow is restricted to two chromosomes only.
 <img src="dag.svg" alt="example workflow">
 
 ## Customization
