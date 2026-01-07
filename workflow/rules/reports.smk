@@ -132,7 +132,7 @@ rule generate_chromosome_summary_report:
     container:
         "docker://ghcr.io/ht-diva/containers/python_ds:406993"
     resources:
-        runtime=lambda wc, attempt: attempt * 60,
+        runtime=lambda wc, attempt: attempt * 10,
     shell:
         """python workflow/scripts/generate_chromosome_summary_report.py \
 {output.txt} \
@@ -154,6 +154,10 @@ rule generate_harmonization_summary_report:
         ),
     output:
         report=ws_path("pgen/reports/all_chromosomes_harmonization_summary_report.txt"),
+    container:
+        "docker://ghcr.io/ht-diva/containers/python_ds:406993"
+    resources:
+        runtime=lambda wc, attempt: attempt * 10,
     shell:
         """python workflow/scripts/generate_harmonization_summary_report.py \
 {output.report} \
