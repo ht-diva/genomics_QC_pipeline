@@ -70,6 +70,7 @@ The pipeline consists of several processing steps organized in 3 main blocks:
 - **Format Conversion**: Supports PGEN ↔ BED conversions
 - **Merging**: Combines chromosome-specific files into unified datasets
 - **Delivery**: Organizes final outputs in standardized directory structure
+- **Report Generation**: Generates comprehensive summary reports detailing the pipeline's results.
 
 ## Output Structure
 
@@ -91,28 +92,38 @@ results/
 
 ## Rule Reference
 
-| Rule Name                  | Purpose                                                                                  | Output Files                                                                              |
-|----------------------------|------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
-| `list_rs`                  | Generate lists of rsIDs and pseudo-biallelic variants                                    | `merge_rsids.txt`, `recode_rsids.txt`, `pseudo_biallelic_var.txt`, `pseudo_biallelic.txt` |
-| `header_info`              | Generate a basic information report from original dataset per chromosome                 | text report                                                                               |
-| `recode_pgen`              | Replace IDs with chr:pos:ref:alt format                                                  | Recoded PGEN files                                                                        |
-| `select_sample`            | Select individuals present in both genomic and proteomic datasets                        | Filtered sample files                                                                     |
-| `get_mirror_snps`          | Identify mirror SNP pairs (X:XXXXXXX:A:B and X:XXXXXXX:B:A)                              | `{chrom}_mirror_snps.txt`                                                                 |
-| `filter_mirror_snps`       | Remove mirror SNPs from dataset                                                          | `{chrom}_filtered_mirror_snps.{pgen,pvar,psam}`                                           |
-| `filter_problematic_snps`  | Filter out a list of predefined problematic SNPs                                         | Filtered PGEN files                                                                       |
-| `filter_var`               | Perform QC: remove failed samples, heterozygosity outliers, MAF filtering, HWE filtering | Quality-controlled PGEN files                                                             |
-| `create_bgen`              | Convert filtered data to BGEN format                                                     | `{chrom}_impute_recoded_selected_sample_filtered_var.{bgen,sample}`                       |
-| `qctool`                   | Compute SNP statistics using qctool                                                      | `snp-stats_chr_{chrom}_impute_recoded_selected_sample_filtered_var.txt`                   |
-| `get_hq_variants`          | Filter variants with info score > 0.7                                                    | List of high-quality variants                                                             |
-| `filter_hq_variants`       | Extract high-quality variants from PGEN files                                            | Chromosome-specific PGEN files with HQ variants                                           |
-| `merge_filter_hq_variants` | Merge chromosome-specific PGEN files                                                     | Combined PGEN file with HQ variants                                                       |
-| `build_snp_mapping_files`  | Generate SNP mapping files for harmonization                                             | Mapping table and harmonized PVAR table                                                   |
-| `update_pgen_id`           | Update variant IDs to chr:pos:A0:A1 format (alphabetical order)                          | PGEN files with updated IDs                                                               |
-| `update_pgen_alleles`      | Harmonize alleles to match new IDs                                                       | PGEN files with harmonized alleles                                                        |
-| `merge_qc_harmonised_pgen` | Merge final harmonized PGEN files                                                        | Final combined PGEN file                                                                  |
-| `pgen2bed`                 | Convert PGEN to BED format (hard-call-threshold = 0.49999999)                            | BED files with harmonized alleles                                                         |
-| `merge_qc_harmonised_bed`  | Merge final harmonized BED files                                                         | Final combined BED file                                                                   |
-| `write_readme`             | Generate documentation with traceability information                                     | `README.txt` with git information                                                         |
+| Steps         | Rule Name                                | Purpose                                                                            | Output Files                                                                              |
+|---------------|------------------------------------------|------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
+| Basic info    |                                          |                                                                                    |                                                                                           |
+|               | `list_rs`                                | Generate lists of rsIDs and pseudo-biallelic variants                              | `merge_rsids.txt`, `recode_rsids.txt`, `pseudo_biallelic_var.txt`, `pseudo_biallelic.txt` |
+|               | `header_info`                            | Generate a basic information report from original dataset per chromosome           | text report                                                                               |
+| QC            |                                          |                                                                                    |                                                                                           |
+|               | `recode_pgen`                            | Replace IDs with chr:pos:ref:alt format                                            | Recoded PGEN files                                                                        |
+|               | `select_sample`                          | Select individuals present in both genomic and proteomic datasets                  | Filtered sample files                                                                     |
+|               | `get_mirror_snps`                        | Identify mirror SNP pairs (X:XXXXXXX:A:B and X:XXXXXXX:B:A)                        | `{chrom}_mirror_snps.txt`                                                                 |
+|               | `filter_mirror_snps`                     | Remove mirror SNPs from dataset                                                    | `{chrom}_filtered_mirror_snps.{pgen,pvar,psam}`                                           |
+|               | `filter_problematic_snps`                | Filter out a list of predefined problematic SNPs                                   | Filtered PGEN files                                                                       |
+|               | `filter_var`                             | Perform QC: remove failed samples, heterozygosity outliers, MAF, and HWE filtering | Quality-controlled PGEN files                                                             |
+|               | `create_bgen`                            | Convert filtered data to BGEN format                                               | `{chrom}_impute_recoded_selected_sample_filtered_var.{bgen,sample}`                       |
+|               | `qctool`                                 | Compute SNP statistics using qctool                                                | `snp-stats_chr_{chrom}_impute_recoded_selected_sample_filtered_var.txt`                   |
+|               | `get_hq_variants`                        | Filter variants with info score > 0.7                                              | List of high-quality variants                                                             |
+|               | `filter_hq_variants`                     | Extract high-quality variants from PGEN files                                      | Chromosome-specific PGEN files with HQ variants                                           |
+|               | `filter_by_minimac3`                     | Extract high-quality variants from PGEN files                                      | Chromosome-specific PGEN files with HQ variants                                           |
+|               | `merge_filter_hq_variants`               | Merge chromosome-specific PGEN files                                               | Combined PGEN file with HQ variants                                                       |
+| Harmonization |                                          |                                                                                    |                                                                                           |
+|               | `build_snp_mapping_files`                | Generate SNP mapping files for harmonization                                       | Mapping table and harmonized PVAR table                                                   |
+|               | `update_pgen_id`                         | Update variant IDs to chr:pos:A0:A1 format (alphabetical order)                    | PGEN files with updated IDs                                                               |
+|               | `update_pgen_alleles`                    | Harmonize alleles to match new IDs                                                 | PGEN files with harmonized alleles                                                        |
+|               | `merge_qc_harmonised_pgen`               | Merge final harmonized PGEN files                                                  | Final combined PGEN file                                                                  |
+|               | `pgen2bed`                               | Convert PGEN to BED format (hard-call-threshold = 0.49999999)                      | BED files with harmonized alleles                                                         |
+|               | `merge_qc_harmonised_bed`                | Merge final harmonized BED files                                                   | Final combined BED file                                                                   |
+| Documentation |                                          |                                                                                    |                                                                                           |
+|               | `write_readme`                           | Generate documentation with traceability information                               | `README.txt` with git information                                                         |
+|               | `generate_chromosome_summary_report`     | Generate a comprehensive report with variant filtering results                     | Text report                                                                               |
+|               | `generate_chromosome_summary_report`     | Generate a table of variant filtering results                                      | TSV table                                                                                 |
+|               | `generate_harmonization_summary_report`  | Generate a comprehensive report with harmonization results                         | Text report                                                                               |
+```
+
 
 ## Workflow example
 
