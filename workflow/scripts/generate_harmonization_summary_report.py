@@ -55,7 +55,7 @@ def parse_plink_log(log_file: str) -> dict | None:
             elif '--update-name:' in line:
                 metrics['type'] = 'id'
                 metrics['num_ids_updated'] = _extract_count(line)
-            elif 'variants loaded' in line.lower():
+            elif 'variants loaded from' in line:
                 metrics['num_variants'] = _extract_count(line)
 
     return metrics if metrics['type'] else None
@@ -63,7 +63,8 @@ def parse_plink_log(log_file: str) -> dict | None:
 
 def _extract_count(line: str) -> int:
     """Helper function to extract count from log line."""
-    match = re.search(r'\d+', line.split(':')[1])
+    part = line.split(':')[1] if ':' in line else line
+    match = re.search(r'\d+', part)
     return int(match.group()) if match else 0
 
 
