@@ -28,6 +28,7 @@ def parse_plink_log(log_file: str) -> dict | None:
         'num_ref_alleles_updated': 0,
         'num_alt1_alleles_updated': 0,
         'num_ids_updated': 0,
+        'num_variants': 0,
         'type': None
     }
 
@@ -54,6 +55,8 @@ def parse_plink_log(log_file: str) -> dict | None:
             elif '--update-name:' in line:
                 metrics['type'] = 'id'
                 metrics['num_ids_updated'] = _extract_count(line)
+            elif 'variants loaded' in line.lower():
+                metrics['num_variants'] = _extract_count(line)
 
     return metrics if metrics['type'] else None
 
@@ -95,13 +98,28 @@ def generate_report(output_file: str, logs: tuple[str]) -> None:
     if not all_metrics:
         click.echo("No valid log files found.", err=True)
         sys.exit(1)
+
     chrom_data = defaultdict(lambda: {'id': None, 'allele': None})
     for metric in all_metrics:
         chrom = metric['chrom']
         report_type = metric['type']
         chrom_data[chrom][report_type] = metric
 
+    total_chroms = len(chrom_data)
+    total_variants = sum(m['num_variants'] for m in all_metrics if m.get('num_variants', 0) > 0)
+    total_ids_updated = sum(m['num_ids_updated'] for m in all_metrics if m['type'] == 'id')
+    total_ref_rotated = sum(m['num_ref_alleles_updated'] for m in all_metrics if m['type'] == 'allele')
+    total_alt_rotated = sum(m['num_alt1_alleles_updated'] for m in all_metrics if m['type'] == 'allele')
+
     with Path(output_file).open('w') as f:
+        f.write(f"\n=== COMPREHENSIVE HARMONIZATION SUMMARY REPORT - ALL CHROMOSOMES ===\n")
+        f.write(f"Report generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+        f.write(f"Total chromosomes processed: {total_chroms}\n")
+        f.write(f"Total variants found: {total_variants}\n")
+        f.write(f"Total IDs updated: {total_ids_updated}\n")
+        f.write(f"Total REF alleles rotated: {total_ref_rotated}\n")
+        f.write(f"Total ALT alleles rotated: {total_alt_rotated}\n")
+
         for chrom, data in sorted(chrom_data.items()):
             if data['id']:
                 write_report_section(
@@ -117,9 +135,6 @@ def generate_report(output_file: str, logs: tuple[str]) -> None:
                     data['allele'],
                     'allele'
                 )
-        f.write(f"\n=== Summary Statistics ===\n")
-        f.write(f"Report generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-        f.write(f"Total chromosomes processed: {len(chrom_data)}\n")
 
 
 if __name__ == "__main__":
