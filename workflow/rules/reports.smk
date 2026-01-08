@@ -176,6 +176,6 @@ rule write_readme:
         echo "These files has been produced by " >> {output};
         echo "Remote origin: $(git config --get remote.origin.url)" >> {output};
         echo "Last commit: $(git log -1 --pretty="%H %s")" >> {output};
-        echo "\n\n";
+        echo "\n\n" >> {output};
         cat {params.basedir}/../README.md >> {output};
         """
