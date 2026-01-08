@@ -164,3 +164,18 @@ rule generate_harmonization_summary_report:
 {input.update_id_log} \
 {input.update_alleles_log} \
 """
+
+
+rule write_readme:
+    output:
+        ws_path("README.txt"),
+    params:
+        basedir=workflow.basedir,
+    shell:
+        """echo "\n## Traceability \n" >> {output};
+        echo "These files has been produced by " >> {output};
+        echo "Remote origin: $(git config --get remote.origin.url)" >> {output};
+        echo "Last commit: $(git log -1 --pretty="%H %s")" >> {output};
+        echo "\n\n";
+        cat {params.basedir}/../README.md >> {output};
+        """

@@ -3,6 +3,7 @@ def get_final_output():
 
     final_output.append(rules.list_rs.output.list_recode_rsid),
     final_output.append(rules.list_rs.output.list_pseudo_biallelic),
+    final_output.append(rules.write_readme.output),
     final_output.extend(
         expand(
             rules.header_info.output.info,
@@ -57,6 +58,7 @@ def get_final_output():
                 chrom=get_chromosomes(),
             )
         ),
-        final_output.append(rules.sync_reports.output)
+        final_output.append(rules.sync_reports.output),
+        final_output.append(rules.sync_readme.output)
 
     return final_output

@@ -132,19 +132,10 @@ rule sync_reports:
         rsync -rlptoDvz --chmod "D755,F644" {input.harmonization} {params.folder}"""
 
 
-rule write_readme:
+rule sync_readme:
     input:
-        rules.sync_tables.output,
-        rules.sync_pfiles_qc_harmonised_all.output,
-        rules.sync_bedfiles_all.output,
+        rules.write_readme.output,
     output:
         dest_path("README.txt"),
-    params:
-        basedir=workflow.basedir,
     shell:
-        """cp {params.basedir}/../README.md {output};
-        echo "\n## Traceability \n" >> {output};
-        echo "These files has been produced by " >> {output};
-        echo "Remote origin: $(git config --get remote.origin.url)" >> {output};
-        echo "Last commit: $(git log -1 --pretty="%H %s")" >> {output};
-        """
+        """cp {input} {output}"""
