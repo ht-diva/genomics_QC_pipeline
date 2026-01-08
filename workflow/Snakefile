@@ -15,6 +15,7 @@ include: "rules/qc_filter_by_imputation_quality.smk"
 include: "rules/harmonization.smk"
 include: "rules/bed.smk"
 include: "rules/merge_all.smk"
+include: "rules/reports.smk"
 include: "rules/results.smk"
 
 

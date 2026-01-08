@@ -44,6 +44,8 @@ rule update_pgen_id:
         pgen=ws_path(UPDATE_PGEN_ID_PREFIX + ".pgen"),
         pvar=ws_path(UPDATE_PGEN_ID_PREFIX + ".pvar"),
         psam=ws_path(UPDATE_PGEN_ID_PREFIX + ".psam"),
+    log:
+        ws_path(UPDATE_PGEN_ID_PREFIX + ".log"),
     container:
         "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
     resources:
@@ -80,6 +82,8 @@ rule update_pgen_alleles:
         pgen=ws_path(UPDATE_PGEN_ALELLES_PREFIX + ".pgen"),
         pvar=ws_path(UPDATE_PGEN_ALELLES_PREFIX + ".pvar"),
         psam=ws_path(UPDATE_PGEN_ALELLES_PREFIX + ".psam"),
+    log:
+        ws_path(UPDATE_PGEN_ALELLES_PREFIX + ".log"),
     container:
         "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
     resources:

@@ -24,8 +24,8 @@ rule filter_mirror_snps:
         rules.select_samples.output.pgen,
     output:
         temp(ws_path(MIRROS_SNPS_PREFIX + ".pgen")),
-        temp(ws_path(MIRROS_SNPS_PREFIX + ".pvar")),
-        temp(ws_path(MIRROS_SNPS_PREFIX + ".psam")),
+        ws_path(MIRROS_SNPS_PREFIX + ".pvar"),
+        ws_path(MIRROS_SNPS_PREFIX + ".psam"),
     container:
         "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
     resources:
@@ -67,8 +67,8 @@ rule filter_problematic_snps:
         rules.filter_mirror_snps.output,
     output:
         temp(ws_path(PROBLEMATIC_SNPS_PREFIX + ".pgen")),
-        temp(ws_path(PROBLEMATIC_SNPS_PREFIX + ".pvar")),
-        temp(ws_path(PROBLEMATIC_SNPS_PREFIX + ".psam")),
+        ws_path(PROBLEMATIC_SNPS_PREFIX + ".pvar"),
+        ws_path(PROBLEMATIC_SNPS_PREFIX + ".psam"),
     container:
         "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
     resources:

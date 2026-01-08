@@ -5,9 +5,9 @@ rule recode_pgen:
     input:
         get_pgen(),
     output:
-        ws_path(RECODE_PREFIX + ".pgen"),
-        ws_path(RECODE_PREFIX + ".pvar"),
-        ws_path(RECODE_PREFIX + ".psam"),
+        pgen=ws_path(RECODE_PREFIX + ".pgen"),
+        pvar=ws_path(RECODE_PREFIX + ".pvar"),
+        psam=ws_path(RECODE_PREFIX + ".psam"),
     container:
         "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
     resources:
@@ -47,7 +47,9 @@ SELECT_PREFIX = "pgen/qc/{chrom}_impute_recoded_selected_sample"
 
 rule select_samples:
     input:
-        rules.recode_pgen.output,
+        rules.recode_pgen.output.pgen,
+        rules.recode_pgen.output.pvar,
+        rules.recode_pgen.output.psam,
     output:
         pgen=ws_path(SELECT_PREFIX + ".pgen"),
         pvar=ws_path(SELECT_PREFIX + ".pvar"),
