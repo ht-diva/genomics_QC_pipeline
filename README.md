@@ -122,7 +122,7 @@ results/
 |               | `generate_chromosome_summary_report`     | Generate a comprehensive report with variant filtering results                     | Text report                                                                               |
 |               | `generate_chromosome_summary_report`     | Generate a table of variant filtering results                                      | TSV table                                                                                 |
 |               | `generate_harmonization_summary_report`  | Generate a comprehensive report with harmonization results                         | Text report                                                                               |
-```
+
 
 
 ## Workflow example
