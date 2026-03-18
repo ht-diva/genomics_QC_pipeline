@@ -34,6 +34,18 @@ set-resources:
     filter_problematic_snps:
       mem_mb: 1024 + attempt * 1024
       threads: *cores
+    compute_afreq:
+      mem_mb: 20480 + attempt * 2048
+      threads: *cores
+    select_best_snps:
+      mem_mb: 8192 + attempt * 1024
+      threads: *cores
+    filter_multiallelic_var:
+      mem_mb: 20480 + attempt * 2048
+      threads: *cores
+    sanitize_problematic_snps:
+      mem_mb: 1024 + attempt * 1024
+      threads: 1
     recode_pgen:
         mem_mb: 102400 + attempt * 2048
         threads: *cores
