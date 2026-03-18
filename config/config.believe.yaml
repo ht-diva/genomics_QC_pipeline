@@ -1,7 +1,7 @@
 run:
   delivery: False
   filter_problematic_snps: True
-  filter_multiallelic_snps: True
+  remove_multiallelic: True
   filter_by_imputation_quality: 'minimac3' # options: info_score, minimac3, none
 
 # paths
