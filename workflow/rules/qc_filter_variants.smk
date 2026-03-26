@@ -164,7 +164,7 @@ rule save_removed_multiallelic_snps:
     output:
         ws_path(MULTIALLELIC_REMOVED_PREFIX + ".txt"),
     shell:
-        r"""
+        """
         awk '!/^#/ {print $3}' {input.pre_pvar} | sort -u > {output}.all
         sort -u {input.kept_snps} > {output}.keep
         comm -23 {output}.all {output}.keep > {output}
