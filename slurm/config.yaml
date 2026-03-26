@@ -40,6 +40,9 @@ set-resources:
     select_best_snps:
       mem_mb: 8192 + attempt * 1024
       threads: *cores
+    save_removed_multiallelic_snps:
+      mem_mb: 8192 + attempt * 1024
+      threads: *cores
     filter_multiallelic_var:
       mem_mb: 20480 + attempt * 2048
       threads: *cores
