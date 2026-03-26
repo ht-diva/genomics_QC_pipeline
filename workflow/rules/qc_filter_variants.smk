@@ -150,11 +150,26 @@ rule select_best_snps:
     resources:
         runtime=lambda wc, attempt: attempt * 60,
     shell:
-        "python workflow/scripts/select_best_snps.py"
+        "python workflow/scripts/select_best_snps.py "
         "--afreq {input.afreq} "
         "--pvar {input.pvar} "
         "--output {output}"
 
+MULTIALLELIC_REMOVED_PREFIX = "pgen/qc/filtering/{chrom}_removed_multiallelic_snps"
+
+rule save_removed_multiallelic_snps:
+    input:
+        pre_pvar=rules.filter_mirror_snps.output.pvar,
+        kept_snps=rules.select_best_snps.output,
+    output:
+        ws_path(MULTIALLELIC_REMOVED_PREFIX + ".txt"),
+    shell:
+        r"""
+        awk '!/^#/ {print $3}' {input.pre_pvar} | sort -u > {output}.all
+        sort -u {input.kept_snps} > {output}.keep
+        comm -23 {output}.all {output}.keep > {output}
+        rm -f {output}.all {output}.keep
+        """
 
 FILTER_MULTIALLELIC_PREFIX = "pgen/qc/filtering/{chrom}_filtered_multiallelic_var"
 
