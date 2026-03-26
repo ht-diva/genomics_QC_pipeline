@@ -6,7 +6,7 @@ from collections import defaultdict
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Select best SNP per site keeping only biallelic SNPs with highest MAF"
+        description="Select best SNP per site. Keep singleton variants as they are; for multiallelic sites keep only the best biallelic SNP with highest MAF."
     )
 
     parser.add_argument("--afreq", required=True, help="PLINK2 .afreq file")
@@ -20,7 +20,6 @@ def read_afreq(path):
     maf_dict = {}
 
     with open(path) as f:
-
         header = f.readline().lstrip("#").split()
         columns = {c: i for i, c in enumerate(header)}
 
@@ -32,48 +31,42 @@ def read_afreq(path):
             freq_col = columns["AFREQ"]
 
         for line in f:
-
             if not line.strip():
                 continue
 
             s = line.split()
-
             vid = s[id_col]
             af = float(s[freq_col].split(",")[0])
-
             maf = min(af, 1 - af)
-
             maf_dict[vid] = maf
 
     return maf_dict
 
 
 def read_pvar(path):
-
     variants = []
 
     with open(path) as f:
-
         for line in f:
-
             if line.startswith("#"):
                 continue
 
             chrom, pos, vid, ref, alt = line.strip().split("\t")[:5]
 
-            variants.append({
-                "chrom": chrom,
-                "pos": pos,
-                "id": vid,
-                "ref": ref,
-                "alt": alt
-            })
+            variants.append(
+                {
+                    "chrom": chrom,
+                    "pos": pos,
+                    "id": vid,
+                    "ref": ref,
+                    "alt": alt,
+                }
+            )
 
     return variants
 
 
 def is_biallelic_snp(ref, alt):
-
     if "," in alt:
         return False
 
@@ -89,7 +82,6 @@ def is_biallelic_snp(ref, alt):
 
 
 def select_best_variants(variants, maf_dict):
-
     sites = defaultdict(list)
 
     for v in variants:
@@ -98,24 +90,20 @@ def select_best_variants(variants, maf_dict):
 
     keep = []
 
-    for site, vars in sites.items():
+    for site, vars_at_site in sites.items():
 
-        # sito con una sola variante
-        if len(vars) == 1:
-
-            v = vars[0]
-
-            if is_biallelic_snp(v["ref"], v["alt"]):
-                keep.append(v["id"])
-
+        # If the position appears only once, keep it as it is
+        # even if it is not a biallelic SNP.
+        if len(vars_at_site) == 1:
+            keep.append(vars_at_site[0]["id"])
             continue
 
-        # sito multiallelico
+        # If the position appears more than once, treat it as multiallelic
+        # and keep only the best valid biallelic SNP.
         best_id = None
         best_maf = -1
 
-        for v in vars:
-
+        for v in vars_at_site:
             if not is_biallelic_snp(v["ref"], v["alt"]):
                 continue
 
@@ -125,30 +113,24 @@ def select_best_variants(variants, maf_dict):
                 best_maf = maf
                 best_id = v["id"]
 
-        if best_id:
+        if best_id is not None:
             keep.append(best_id)
 
     return keep
 
 
 def write_output(ids, path):
-
     with open(path, "w") as f:
-
         for vid in ids:
             f.write(vid + "\n")
 
 
 def main():
-
     args = parse_args()
 
     maf_dict = read_afreq(args.afreq)
-
     variants = read_pvar(args.pvar)
-
     best = select_best_variants(variants, maf_dict)
-
     write_output(best, args.output)
 
 
