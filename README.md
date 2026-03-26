@@ -59,11 +59,15 @@ The pipeline consists of several processing steps organized in 3 main blocks:
 - **ID Standardization**: Converts variant IDs to `chr:pos:ref:alt` format
 - **Sample Selection**: Filters to include only individuals with matching proteomic data
 - **Mirror SNP Handling**: Identifies and removes problematic palindromic variants
+- **Multiallelic-site handling**: variants are grouped by chromosome and position among valid biallelic SNPs, one SNP per position is retained.
+The selected SNPs are written to `pgen/qc/filtering/{chrom}_best_snps.txt`
+The excluded SNPs are written to `pgen/qc/filtering/{chrom}_removed_multiallelic_snps.txt`
 - **Variant Filtering**: Removes low-quality variants based on multiple metrics (MAF, HWE, etc.)
-  - **Imputation quality**: Filters based on imputation quality metrics (INFO-score or MINIMAC3)
+- **Imputation quality**: Filters based on imputation quality metrics (INFO-score or MINIMAC3)
 
 ### 2. Data Harmonization
-- **ID Harmonization**: Arrange the variant IDs in alphabetical order.
+- **SNP mapping**: generates mapping tables with GWASPipe
+- **ID Harmonization**: Arrange the variant IDs in alphabetical order
 - **Allele Harmonization**: Ensures consistent allele representation across datasets
 
 ### 3. Final Preparation
@@ -77,16 +81,25 @@ The pipeline consists of several processing steps organized in 3 main blocks:
 ```
 results/
 ├── bed/
-│   └── qc_harmonised/   # Harmonized BED files ready for analysis
+│   └── qc_harmonised/
 ├── pgen/
-│   ├── *_impute.info
+│   ├── qc/
+│   │   ├── {chrom}.impute_recoded_selected_sample_filtered_var.pgen
+│   │   ├── {chrom}.impute_recoded_selected_sample_filtered_var.pvar
+│   │   ├── {chrom}.impute_recoded_selected_sample_filtered_var.psam
+│   │   ├── {chrom}.impute_recoded_selected_sample_filtered_var_filtered_hq_var.pvar
+│   │   ├── {chrom}.impute_recoded_selected_sample_filtered_var_filtered_minimac3.pvar
+│   │   └── filtering/
+│   │       ├── {chrom}_mirror_snps.txt
+│   │       ├── {chrom}_best_snps.txt
+│   │       └── {chrom}_removed_multiallelic_snps.txt
+│   ├── qc_harmonised/
 │   ├── pseudo_biallelic.txt
-│   ├── qc_harmonised/   # Fully quality-controlled, harmonized PGEN files
-│   ├── recode_rsid.txt
-│   └── reports/
-│       ├── all_chromosomes_filtering_summary_report.txt
-│       ├── all_chromosomes_filtering_summary_report.tsv
-│       └── all_chromosomes_harmonization_summary_report.txt
+│   └── recode_rsid.txt
+├── reports/
+│   ├── all_chromosomes_filtering_summary_report.txt
+│   ├── all_chromosomes_filtering_summary_report.tsv
+│   └── all_chromosomes_harmonization_summary_report.txt
 └── README.txt
 ```
 
