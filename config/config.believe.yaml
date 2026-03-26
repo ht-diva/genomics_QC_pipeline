@@ -11,6 +11,7 @@ pgen_template: 'chr{chrom}.pgen'
 pvar_template: 'chr{chrom}.pvar'
 dest_path: '/exchange/healthds/pQTL/BELIEVE/Genetic_QC_files/harmonized'
 problematic_snps_path: '/exchange/healthds/pQTL/BELIEVE/problematic_7k_snps/problematic_snps.txt'
+config_file_path: "config/gwaspipe/config_snp_mapping.yml"
 
 ## Sample selection - https://www.cog-genomics.org/plink/2.0/filter
 sample_selection_method: 'keep-fam' # options: keep, keep-fam, remove, remove-fam
