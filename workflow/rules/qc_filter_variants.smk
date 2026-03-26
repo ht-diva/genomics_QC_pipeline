@@ -144,7 +144,7 @@ rule select_best_snps:
         afreq=rules.compute_afreq.output,
         pvar=rules.filter_mirror_snps.output.pvar,
     output:
-        temp(ws_path(BEST_SNPS_PREFIX + ".txt")),
+        ws_path(ws_path(BEST_SNPS_PREFIX + ".txt")),
     container:
         "docker://ghcr.io/ht-diva/containers/python_ds:406993"
     resources:
