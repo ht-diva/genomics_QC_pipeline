@@ -145,7 +145,7 @@ results/
 ## Workflow example
 
 This graph illustrates the progression of the workflow from the input files to the final outputs. For simplicity, the workflow is restricted to two chromosomes only.
-<iframe src="dag.pdf" width="100%" height="600"></iframe>
+[Open the workflow diagram (PDF)](dag.pdf)
 
 ## Customization
 
