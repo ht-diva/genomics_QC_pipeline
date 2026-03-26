@@ -32,6 +32,13 @@ def get_final_output():
     final_output.append(rules.generate_chromosome_summary_report.output.txt),
     final_output.append(rules.generate_harmonization_summary_report.output.report)
 
+    final_output.extend(
+        expand(
+            ws_path("pgen/qc/filtering/{chrom}_removed_multiallelic_snps.txt"),
+            chrom=get_chromosomes(),
+        )
+    )
+
     if config.get("run").get("delivery"):
         final_output.append(rules.write_readme.output),
         final_output.extend(
