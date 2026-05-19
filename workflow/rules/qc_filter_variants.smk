@@ -11,44 +11,9 @@ rule sanitize_problematic_snps:
         """sed 's/^chr//' {input.problematic_snps} > {output}"""
 
 
-PROBLEMATIC_SNPS_PREFIX = "pgen/qc/filtering/{chrom}_filtered_problematic_snps"
-
-
-rule filter_problematic_snps:
-    input:
-        problematic_snps=rules.sanitize_problematic_snps.output,
-        pgen=rules.select_samples.output.pgen,
-        pvar=rules.select_samples.output.pvar,
-        psam=rules.select_samples.output.psam,
-    output:
-        pgen=temp(ws_path(PROBLEMATIC_SNPS_PREFIX + ".pgen")),
-        pvar=ws_path(PROBLEMATIC_SNPS_PREFIX + ".pvar"),
-        psam=ws_path(PROBLEMATIC_SNPS_PREFIX + ".psam"),
-    container:
-        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
-    resources:
-        runtime=lambda wc, attempt: attempt * 60,
-    params:
-        pfile=rules.select_samples.params.prefix,
-        prefix=ws_path(PROBLEMATIC_SNPS_PREFIX),
-    shell:
-        """plink2 \
-        --pfile {params.pfile} \
-        --exclude {input.problematic_snps} \
-        --make-pgen \
-        --out {params.prefix} \
-        --threads {resources.threads} \
-        --memory 1900 'require'
-        """
-
-
 rule get_mirror_snps:
     input:
-        pvar=branch(
-            lookup(dpath="run/filter_problematic_snps", within=config),
-            then=rules.filter_problematic_snps.output.pvar,
-            otherwise=rules.select_samples.output.pvar,
-        ),
+        pvar=rules.select_samples.output.pvar,
     output:
         ws_path("pgen/qc/filtering/{chrom}_mirror_snps.txt"),
     container:
@@ -64,25 +29,12 @@ rule get_mirror_snps:
 
 MIRROR_SNPS_PREFIX = "pgen/qc/filtering/{chrom}_filtered_mirror_snps"
 
-
 rule filter_mirror_snps:
     input:
         mirror_snps=rules.get_mirror_snps.output,
-        pgen=branch(
-            lookup(dpath="run/filter_problematic_snps", within=config),
-            then=rules.filter_problematic_snps.output.pgen,
-            otherwise=rules.select_samples.output.pgen,
-        ),
-        pvar=branch(
-            lookup(dpath="run/filter_problematic_snps", within=config),
-            then=rules.filter_problematic_snps.output.pvar,
-            otherwise=rules.select_samples.output.pvar,
-        ),
-        psam=branch(
-            lookup(dpath="run/filter_problematic_snps", within=config),
-            then=rules.filter_problematic_snps.output.psam,
-            otherwise=rules.select_samples.output.psam,
-        ),
+        pgen=rules.select_samples.output.pgen,
+        pvar=rules.select_samples.output.pvar,
+        psam=rules.select_samples.output.psam,
     output:
         pgen=temp(ws_path(MIRROR_SNPS_PREFIX + ".pgen")),
         pvar=ws_path(MIRROR_SNPS_PREFIX + ".pvar"),
@@ -92,11 +44,7 @@ rule filter_mirror_snps:
     resources:
         runtime=lambda wc, attempt: attempt * 60,
     params:
-        pfile=branch(
-            lookup(dpath="run/filter_problematic_snps", within=config),
-            then=rules.filter_problematic_snps.params.prefix,
-            otherwise=rules.select_samples.params.prefix,
-        ),
+        pfile=rules.select_samples.params.prefix,
         prefix=ws_path(MIRROR_SNPS_PREFIX),
     shell:
         """plink2 \
@@ -109,14 +57,68 @@ rule filter_mirror_snps:
         """
 
 
-AFREQ_PREFIX = "pgen/qc/filtering/{chrom}_filtered_mirror_snps"
+PROBLEMATIC_SNPS_PREFIX = "pgen/qc/filtering/{chrom}_filtered_problematic_snps"
 
-
-rule compute_afreq:
+rule filter_problematic_snps:
     input:
+        problematic_snps=rules.sanitize_problematic_snps.output,
         pgen=rules.filter_mirror_snps.output.pgen,
         pvar=rules.filter_mirror_snps.output.pvar,
         psam=rules.filter_mirror_snps.output.psam,
+    output:
+        pgen=temp(ws_path(PROBLEMATIC_SNPS_PREFIX + ".pgen")),
+        pvar=ws_path(PROBLEMATIC_SNPS_PREFIX + ".pvar"),
+        psam=ws_path(PROBLEMATIC_SNPS_PREFIX + ".psam"),
+    container:
+        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
+    resources:
+        runtime=lambda wc, attempt: attempt * 60,
+    params:
+        pfile=rules.filter_mirror_snps.params.prefix,
+        prefix=ws_path(PROBLEMATIC_SNPS_PREFIX),
+    shell:
+        """plink2 \
+        --pfile {params.pfile} \
+        --exclude {input.problematic_snps} \
+        --make-pgen \
+        --out {params.prefix} \
+        --threads {resources.threads} \
+        --memory 1900 'require'
+        """
+
+
+POST_MIRROR_PGEN = branch(
+    lookup(dpath="run/filter_problematic_snps", within=config),
+    then=rules.filter_problematic_snps.output.pgen,
+    otherwise=rules.filter_mirror_snps.output.pgen,
+)
+
+POST_MIRROR_PVAR = branch(
+    lookup(dpath="run/filter_problematic_snps", within=config),
+    then=rules.filter_problematic_snps.output.pvar,
+    otherwise=rules.filter_mirror_snps.output.pvar,
+)
+
+POST_MIRROR_PSAM = branch(
+    lookup(dpath="run/filter_problematic_snps", within=config),
+    then=rules.filter_problematic_snps.output.psam,
+    otherwise=rules.filter_mirror_snps.output.psam,
+)
+
+POST_MIRROR_PFILE = branch(
+    lookup(dpath="run/filter_problematic_snps", within=config),
+    then=rules.filter_problematic_snps.params.prefix,
+    otherwise=rules.filter_mirror_snps.params.prefix,
+)
+
+
+AFREQ_PREFIX = "pgen/qc/filtering/{chrom}_filtered_mirror_snps"
+
+rule compute_afreq:
+    input:
+        pgen=POST_MIRROR_PGEN,
+        pvar=POST_MIRROR_PVAR,
+        psam=POST_MIRROR_PSAM,
     output:
         temp(ws_path(AFREQ_PREFIX + ".afreq")),
     container:
@@ -124,7 +126,7 @@ rule compute_afreq:
     resources:
         runtime=lambda wc, attempt: attempt * 60,
     params:
-        pfile=rules.filter_mirror_snps.params.prefix,
+        pfile=POST_MIRROR_PFILE,
         prefix=ws_path(AFREQ_PREFIX),
     shell:
         """plink2 \
@@ -138,11 +140,10 @@ rule compute_afreq:
 
 BEST_SNPS_PREFIX = "pgen/qc/filtering/{chrom}_best_snps"
 
-
 rule select_best_snps:
     input:
         afreq=rules.compute_afreq.output,
-        pvar=rules.filter_mirror_snps.output.pvar,
+        pvar=POST_MIRROR_PVAR,
     output:
         ws_path(BEST_SNPS_PREFIX + ".txt")
     container:
@@ -155,11 +156,12 @@ rule select_best_snps:
         "--pvar {input.pvar} "
         "--output {output}"
 
+
 MULTIALLELIC_REMOVED_PREFIX = "pgen/qc/filtering/{chrom}_removed_multiallelic_snps"
 
 rule save_removed_multiallelic_snps:
     input:
-        pre_pvar=rules.filter_mirror_snps.output.pvar,
+        pre_pvar=POST_MIRROR_PVAR,
         kept_snps=rules.select_best_snps.output,
     output:
         ws_path(MULTIALLELIC_REMOVED_PREFIX + ".txt"),
@@ -171,14 +173,14 @@ rule save_removed_multiallelic_snps:
         rm -f {output}.all {output}.keep
         """
 
-FILTER_MULTIALLELIC_PREFIX = "pgen/qc/filtering/{chrom}_filtered_multiallelic_var"
 
+FILTER_MULTIALLELIC_PREFIX = "pgen/qc/filtering/{chrom}_filtered_multiallelic_var"
 
 rule filter_multiallelic_var:
     input:
-        pgen=rules.filter_mirror_snps.output.pgen,
-        pvar=rules.filter_mirror_snps.output.pvar,
-        psam=rules.filter_mirror_snps.output.psam,
+        pgen=POST_MIRROR_PGEN,
+        pvar=POST_MIRROR_PVAR,
+        psam=POST_MIRROR_PSAM,
         snps_to_keep=rules.select_best_snps.output,
     output:
         pgen=temp(ws_path(FILTER_MULTIALLELIC_PREFIX + ".pgen")),
@@ -189,7 +191,7 @@ rule filter_multiallelic_var:
     resources:
         runtime=lambda wc, attempt: attempt * 60,
     params:
-        pfile=rules.filter_mirror_snps.params.prefix,
+        pfile=POST_MIRROR_PFILE,
         prefix=ws_path(FILTER_MULTIALLELIC_PREFIX),
     shell:
         """plink2 \
@@ -204,23 +206,22 @@ rule filter_multiallelic_var:
 
 FILTER_VAR_PREFIX = "pgen/qc/{chrom}.impute_recoded_selected_sample_filtered_var"
 
-
 rule filter_var:
     input:
         pgen=branch(
             lookup(dpath="run/remove_multiallelic", within=config),
             then=rules.filter_multiallelic_var.output.pgen,
-            otherwise=rules.filter_mirror_snps.output.pgen,
+            otherwise=POST_MIRROR_PGEN,
         ),
         pvar=branch(
             lookup(dpath="run/remove_multiallelic", within=config),
             then=rules.filter_multiallelic_var.output.pvar,
-            otherwise=rules.filter_mirror_snps.output.pvar,
+            otherwise=POST_MIRROR_PVAR,
         ),
         psam=branch(
             lookup(dpath="run/remove_multiallelic", within=config),
             then=rules.filter_multiallelic_var.output.psam,
-            otherwise=rules.filter_mirror_snps.output.psam,
+            otherwise=POST_MIRROR_PSAM,
         ),
     output:
         pgen=ws_path(FILTER_VAR_PREFIX + ".pgen"),
@@ -234,7 +235,7 @@ rule filter_var:
         pfile=branch(
             lookup(dpath="run/remove_multiallelic", within=config),
             then=rules.filter_multiallelic_var.params.prefix,
-            otherwise=rules.filter_mirror_snps.params.prefix,
+            otherwise=POST_MIRROR_PFILE,
         ),
         prefix=ws_path(FILTER_VAR_PREFIX),
         geno=config.get("plink2_dict").get("geno"),
