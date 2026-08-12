@@ -112,141 +112,35 @@ POST_MIRROR_PFILE = branch(
 )
 
 
-AFREQ_PREFIX = "pgen/qc/filtering/{chrom}_filtered_mirror_snps"
-
-rule compute_afreq:
-    input:
-        pgen=POST_MIRROR_PGEN,
-        pvar=POST_MIRROR_PVAR,
-        psam=POST_MIRROR_PSAM,
-    output:
-        temp(ws_path(AFREQ_PREFIX + ".afreq")),
-    container:
-        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
-    resources:
-        runtime=lambda wc, attempt: attempt * 60,
-    params:
-        pfile=POST_MIRROR_PFILE,
-        prefix=ws_path(AFREQ_PREFIX),
-    shell:
-        """plink2 \
-        --pfile {params.pfile} \
-        --freq \
-        --out {params.prefix} \
-        --threads {resources.threads} \
-        --memory 19000 'require'
-        """
-
-
-BEST_SNPS_PREFIX = "pgen/qc/filtering/{chrom}_best_snps"
-
-rule select_best_snps:
-    input:
-        afreq=rules.compute_afreq.output,
-        pvar=POST_MIRROR_PVAR,
-    output:
-        ws_path(BEST_SNPS_PREFIX + ".txt")
-    container:
-        "docker://ghcr.io/ht-diva/containers/python_ds:406993"
-    resources:
-        runtime=lambda wc, attempt: attempt * 60,
-    shell:
-        "python workflow/scripts/select_best_snps.py "
-        "--afreq {input.afreq} "
-        "--pvar {input.pvar} "
-        "--output {output}"
-
-
-MULTIALLELIC_REMOVED_PREFIX = "pgen/qc/filtering/{chrom}_removed_multiallelic_snps"
-
-rule save_removed_multiallelic_snps:
-    input:
-        pre_pvar=POST_MIRROR_PVAR,
-        kept_snps=rules.select_best_snps.output,
-    output:
-        ws_path(MULTIALLELIC_REMOVED_PREFIX + ".txt"),
-    shell:
-        r"""
-        awk '!/^#/ {{print $3}}' {input.pre_pvar} | sort -u > {output}.all
-        sort -u {input.kept_snps} > {output}.keep
-        comm -23 {output}.all {output}.keep > {output}
-        rm -f {output}.all {output}.keep
-        """
-
-
-FILTER_MULTIALLELIC_PREFIX = "pgen/qc/filtering/{chrom}_filtered_multiallelic_var"
-
-rule filter_multiallelic_var:
-    input:
-        pgen=POST_MIRROR_PGEN,
-        pvar=POST_MIRROR_PVAR,
-        psam=POST_MIRROR_PSAM,
-        snps_to_keep=rules.select_best_snps.output,
-    output:
-        pgen=temp(ws_path(FILTER_MULTIALLELIC_PREFIX + ".pgen")),
-        pvar=ws_path(FILTER_MULTIALLELIC_PREFIX + ".pvar"),
-        psam=ws_path(FILTER_MULTIALLELIC_PREFIX + ".psam"),
-    container:
-        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
-    resources:
-        runtime=lambda wc, attempt: attempt * 60,
-    params:
-        pfile=POST_MIRROR_PFILE,
-        prefix=ws_path(FILTER_MULTIALLELIC_PREFIX),
-    shell:
-        """plink2 \
-        --pfile {params.pfile} \
-        --extract {input.snps_to_keep} \
-        --make-pgen \
-        --out {params.prefix} \
-        --threads {resources.threads} \
-        --memory 19000 'require'
-        """
-
-
 FILTER_VAR_PREFIX = "pgen/qc/{chrom}.impute_recoded_selected_sample_filtered_var"
 
 rule filter_var:
     input:
-        pgen=branch(
-            lookup(dpath="run/remove_multiallelic", within=config),
-            then=rules.filter_multiallelic_var.output.pgen,
-            otherwise=POST_MIRROR_PGEN,
-        ),
-        pvar=branch(
-            lookup(dpath="run/remove_multiallelic", within=config),
-            then=rules.filter_multiallelic_var.output.pvar,
-            otherwise=POST_MIRROR_PVAR,
-        ),
-        psam=branch(
-            lookup(dpath="run/remove_multiallelic", within=config),
-            then=rules.filter_multiallelic_var.output.psam,
-            otherwise=POST_MIRROR_PSAM,
-        ),
+        pgen=POST_MIRROR_PGEN,
+        pvar=POST_MIRROR_PVAR,
+        psam=POST_MIRROR_PSAM,
+
     output:
         pgen=ws_path(FILTER_VAR_PREFIX + ".pgen"),
         pvar=ws_path(FILTER_VAR_PREFIX + ".pvar"),
         psam=ws_path(FILTER_VAR_PREFIX + ".psam"),
+
     container:
         "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
+
     resources:
         runtime=lambda wc, attempt: attempt * 60,
+
     params:
-        pfile=branch(
-            lookup(dpath="run/remove_multiallelic", within=config),
-            then=rules.filter_multiallelic_var.params.prefix,
-            otherwise=POST_MIRROR_PFILE,
-        ),
+        pfile=POST_MIRROR_PFILE,
         prefix=ws_path(FILTER_VAR_PREFIX),
         geno=config.get("plink2_dict").get("geno"),
         hwe=config.get("plink2_dict").get("hwe"),
         mac=config.get("plink2_dict").get("mac"),
+
     shell:
         """plink2 \
         --pfile {params.pfile} \
-        --not-chr X Y XY \
-        --geno {params.geno} \
-        --hwe {params.hwe} \
         --mac {params.mac} \
         --make-pgen \
         --out {params.prefix} \
