@@ -66,7 +66,7 @@ rule update_pgen_id:
 --pfile {params.pfile} \
 --make-pgen \
 --out {params.prefix} \
---threads {resources.threads} \
+--threads {threads} \
 --memory 1900 'require'
 """
 
@@ -98,6 +98,6 @@ rule update_pgen_alleles:
 --make-pgen \
 --pfile {params.pfile} \
 --out {params.prefix} \
---threads {resources.threads} \
+--threads {threads} \
 --memory 1900 'require'
 """

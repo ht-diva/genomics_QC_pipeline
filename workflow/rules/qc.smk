@@ -71,6 +71,6 @@ rule select_samples:
 --make-pgen \
 --mind {params.mind} \
 --out {params.prefix} \
---threads {resources.threads} \
+--threads {threads} \
 --memory 90000 'require'
 """

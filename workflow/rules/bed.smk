@@ -23,7 +23,7 @@ rule pgen2bed:
 --alt1-allele {params.pfile}.pvar 5 3 \
 --make-bed  \
 --out {params.prefix} \
---threads {resources.threads} \
+--threads {threads} \
 --memory 1900 'require'
 """
 
@@ -56,6 +56,6 @@ rule merge_qc_harmonised_bed:
  --pmerge-list {output.file_list} bfile \
  --make-bed \
  --out {params.pmerge} \
- --threads {resources.threads} \
+ --threads {threads} \
  --memory 90000 'require'
 """

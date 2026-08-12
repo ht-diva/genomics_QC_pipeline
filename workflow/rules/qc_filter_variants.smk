@@ -52,7 +52,7 @@ rule filter_mirror_snps:
         --exclude {input.mirror_snps} \
         --make-pgen \
         --out {params.prefix} \
-        --threads {resources.threads} \
+        --threads {threads} \
         --memory 1900 'require'
         """
 
@@ -82,7 +82,7 @@ rule filter_problematic_snps:
         --exclude {input.problematic_snps} \
         --make-pgen \
         --out {params.prefix} \
-        --threads {resources.threads} \
+        --threads {threads} \
         --memory 1900 'require'
         """
 
@@ -144,6 +144,6 @@ rule filter_var:
         --mac {params.mac} \
         --make-pgen \
         --out {params.prefix} \
-        --threads {resources.threads} \
+        --threads {threads} \
         --memory 19000 'require'
         """
