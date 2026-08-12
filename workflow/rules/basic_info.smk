@@ -24,6 +24,7 @@ rule header_info:
         info=ws_path("pgen/{chrom}_impute.info"),
     container:
         "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
+    threads: 1
     resources:
         runtime=lambda wc, attempt: attempt * 10,
     shell:
@@ -32,5 +33,5 @@ plink2 \
 --pfile $PFILE \
 --pgen-info \
 --memory 3000 \
---threads {resources.threads} &> {output.info}
+--threads {threads} &> {output.info}
 """
