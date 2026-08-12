@@ -1,7 +1,6 @@
 run:
   delivery: False
   filter_problematic_snps: False
-  filter_multiallelic_snps: False
   filter_by_imputation_quality: "info_score" # options: info_score, minimac3, none
 
 # paths
