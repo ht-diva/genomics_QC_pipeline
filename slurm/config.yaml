@@ -39,12 +39,13 @@ set-resources:
       threads: 1
     recode_pgen:
         mem_mb: 102400 + attempt * 2048
-        threads: *cores
+        runtime: attempt * 10
     list_rs:
       mem_mb: 102400 + attempt * 2048
       threads: *cores
     header_info:
         mem_mb: 2048 + attempt * 2048
+        runtime: attempt * 10
     select_samples:
       mem_mb: 102400 + attempt * 2048
       threads: *cores

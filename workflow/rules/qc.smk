@@ -22,7 +22,7 @@ rule recode_pgen:
 --new-id-max-allele-len 1000 \
 --make-pgen \
 --out {params.prefix} \
---threads {resources.threads} \
+--threads {threads} \
 --memory 90000 'require'
 """
 
