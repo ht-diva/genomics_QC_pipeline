@@ -87,7 +87,7 @@ The pipeline consists of several processing steps organized in 3 main blocks:
 * **Sample Selection**: Filters to include only individuals with matching proteomic data
 * **Mirror SNP Handling**: Identifies and removes problematic mirror SNPs
 * **Problematic SNP Filtering**: Optionally removes variants from a predefined list of problematic SNPs
-* **Variant Filtering**: Removes low-quality variants based on missingness, Hardy-Weinberg equilibrium (HWE), and minor allele count (MAC)
+* **Variant Filtering**: Removes low-quality variants based on minor allele count (MAC)
 * **Imputation Quality**: Filters based on imputation quality metrics (INFO-score or MINIMAC3)
 
 ### 2. Data Harmonization
