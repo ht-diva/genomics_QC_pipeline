@@ -63,13 +63,11 @@ rule select_samples:
         id_list=config.get("id_list_path"),
         pfile=ws_path(RECODE_PREFIX),
         prefix=ws_path(SELECT_PREFIX),
-        mind=config.get("plink2_dict").get("mind"),
     shell:
         """plink2 \
 --pfile {params.pfile} \
 --{params.method} {params.id_list} \
 --make-pgen \
---mind {params.mind} \
 --out {params.prefix} \
 --threads {threads} \
 --memory 90000 'require'
