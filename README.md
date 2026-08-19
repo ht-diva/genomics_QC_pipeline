@@ -1,7 +1,8 @@
 # genomics_QC_pipeline
 
 A comprehensive quality control pipeline for cleaning and preparing imputed genotype data for protein quantitative trait locus (pQTL) analysis.
-This pipeline is based on Alessia Mapelli and Solène Cadiou's work, and has been adapted for reproducible genomic data processing.
+This pipeline is based on the work of Alessia Mapelli and Solène Cadiou and has been adapted for reproducible genomic data processing.
+The development and implementation of the pipeline were carried out by Gianmauro Cuccuru and Giulia Pontali.
 
 ## Features
 
