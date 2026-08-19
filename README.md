@@ -166,7 +166,7 @@ results/
 
 This graph illustrates the progression of the workflow from the input files to the final outputs. For simplicity, the workflow is restricted to two chromosomes only.
 
-[Open the workflow diagram (PDF)](rulegraph.pdf)
+[Open the workflow diagram (PDF)](dag.pdf)
 
 ## Customization
 
