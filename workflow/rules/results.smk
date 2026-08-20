@@ -60,6 +60,11 @@ def get_final_output():
         rules.generate_harmonization_summary_report.output.report
     )
 
+    # Stage QC report
+    final_output.append(
+        rules.generate_stage_qc_report.output.tsv
+    )
+
     if config.get("run").get("delivery"):
         final_output.append(rules.write_readme.output)
 

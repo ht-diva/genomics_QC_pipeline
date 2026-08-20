@@ -164,8 +164,256 @@ rule generate_harmonization_summary_report:
 {input.update_id_log} \
 {input.update_alleles_log} \
 """
+# ---------------------------------------------------------------------
+# Full stage QC report
+# ---------------------------------------------------------------------
+
+QC_STAGES = [
+    "raw_input",
+    "after_sample_selection",
+    "after_variant_qc",
+    "pre_harmonization",
+    "post_harmonization",
+]
 
 
+def get_stage_qc_file(wildcards, extension):
+    """
+    Return the PGEN/PVAR/PSAM file corresponding to each QC stage.
+    """
+
+    stage = wildcards.stage
+
+    # Raw dataset used by the QC pipeline
+    if stage == "raw_input":
+        path = getattr(
+            rules.recode_pgen.output,
+            extension,
+        )
+
+    # After sample filtering
+    elif stage == "after_sample_selection":
+        path = getattr(
+            rules.select_samples.output,
+            extension,
+        )
+
+    # After variant QC
+    elif stage == "after_variant_qc":
+        path = getattr(
+            rules.filter_var.output,
+            extension,
+        )
+
+    # Dataset immediately before harmonization
+    elif stage == "pre_harmonization":
+
+        filtering_method = (
+            config.get("run").get("filter_by_imputation_quality")
+        )
+
+        if filtering_method == "none":
+            path = getattr(
+                rules.filter_var.output,
+                extension,
+            )
+
+        elif filtering_method == "info_score":
+            path = getattr(
+                rules.filter_hq_variants.output,
+                extension,
+            )
+
+        elif filtering_method == "minimac3":
+            path = getattr(
+                rules.filter_by_minimac3.output,
+                extension,
+            )
+
+        else:
+            raise ValueError(
+                "Unknown filter_by_imputation_quality value: "
+                f"{filtering_method}"
+            )
+
+    # After harmonization
+    elif stage == "post_harmonization":
+        path = getattr(
+            rules.update_pgen_alleles.output,
+            extension,
+        )
+
+    else:
+        raise ValueError(
+            f"Unknown QC stage: {stage}"
+        )
+
+    return str(path).format(
+        chrom=wildcards.chrom
+    )
+
+
+def get_stage_qc_prefix(wildcards):
+    """
+    Return PLINK --pfile prefix for the selected stage.
+    """
+
+    pgen = get_stage_qc_file(
+        wildcards,
+        "pgen",
+    )
+
+    if not pgen.endswith(".pgen"):
+        raise ValueError(
+            f"Expected .pgen file, got: {pgen}"
+        )
+
+    return pgen[:-5]
+
+
+# ---------------------------------------------------------------------
+# Get dosage information for every chromosome x stage
+# ---------------------------------------------------------------------
+
+rule generate_stage_qc_plink_metrics:
+    input:
+        pgen=lambda wc: get_stage_qc_file(
+            wc,
+            "pgen",
+        ),
+        pvar=lambda wc: get_stage_qc_file(
+            wc,
+            "pvar",
+        ),
+        psam=lambda wc: get_stage_qc_file(
+            wc,
+            "psam",
+        ),
+    output:
+        pgen_info=temp(
+            ws_path(
+                "pgen/reports/stage_qc/"
+                "{chrom}.{stage}.pgen_info.log"
+            )
+        ),
+        vmiss=temp(
+            ws_path(
+                "pgen/reports/stage_qc/"
+                "{chrom}.{stage}.missing.vmiss"
+            )
+        ),
+        missing_log=temp(
+            ws_path(
+                "pgen/reports/stage_qc/"
+                "{chrom}.{stage}.missing.log"
+            )
+        ),
+    container:
+        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
+    resources:
+        runtime=lambda wildcards, attempt: attempt * 60,
+    params:
+        pfile=get_stage_qc_prefix,
+
+        pgen_info_prefix=lambda wc: ws_path(
+            "pgen/reports/stage_qc/"
+            f"{wc.chrom}.{wc.stage}.pgen_info"
+        ),
+
+        missing_prefix=lambda wc: ws_path(
+            "pgen/reports/stage_qc/"
+            f"{wc.chrom}.{wc.stage}.missing"
+        ),
+    shell:
+        """
+        mkdir -p $(dirname {output.pgen_info})
+
+        plink2 \
+            --pfile {params.pfile} \
+            --pgen-info \
+            --out {params.pgen_info_prefix}
+
+        plink2 \
+            --pfile {params.pfile} \
+            --missing variant-only vcols=nmissdosage,nobs \
+            --out {params.missing_prefix}
+        """
+
+
+# ---------------------------------------------------------------------
+# Generate one report row for every chromosome x stage
+# ---------------------------------------------------------------------
+
+rule generate_stage_qc_row:
+    input:
+        pvar=lambda wc: get_stage_qc_file(
+            wc,
+            "pvar",
+        ),
+
+        psam=lambda wc: get_stage_qc_file(
+            wc,
+            "psam",
+        ),
+
+        pgen_info=(
+            rules.generate_stage_qc_plink_metrics.output.pgen_info
+        ),
+
+        vmiss=(
+            rules.generate_stage_qc_plink_metrics.output.vmiss
+        ),
+    output:
+        tsv=temp(
+            ws_path(
+                "pgen/reports/stage_qc/"
+                "{chrom}.{stage}.tsv"
+            )
+        ),
+    container:
+        "docker://ghcr.io/ht-diva/containers/python_ds:406993"
+    resources:
+        runtime=lambda wildcards, attempt: attempt * 10,
+    shell:
+        """
+        python workflow/scripts/generate_full_report.py \
+            --pvar {input.pvar} \
+            --psam {input.psam} \
+            --pgen-info {input.pgen_info} \
+            --vmiss {input.vmiss} \
+            --chromosome {wildcards.chrom} \
+            --stage {wildcards.stage} \
+            --output {output.tsv}
+        """
+
+
+# ---------------------------------------------------------------------
+# Merge all chromosome x stage rows into one report
+# ---------------------------------------------------------------------
+
+rule generate_stage_qc_report:
+    input:
+        rows=expand(
+            ws_path(
+                "pgen/reports/stage_qc/"
+                "{chrom}.{stage}.tsv"
+            ),
+            chrom=get_chromosomes(),
+            stage=QC_STAGES,
+        ),
+    output:
+        tsv=ws_path(
+            "pgen/reports/"
+            "all_chromosomes_stage_qc_report.tsv"
+        ),
+    resources:
+        runtime=lambda wildcards, attempt: attempt * 10,
+    shell:
+        """
+        awk 'FNR == 1 && NR != 1 {{next}} {{print}}' \
+            {input.rows} > {output.tsv}
+        """
+    
 rule write_readme:
     output:
         ws_path("README.txt"),
