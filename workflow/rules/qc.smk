@@ -3,7 +3,8 @@ RECODE_PREFIX = "pgen/qc/{chrom}_impute_recoded"
 
 rule recode_pgen:
     input:
-        get_pgen(),
+        pgen=get_pgen(),
+        validated=rules.validate_imputed_input.output.ok,
     output:
         pgen=ws_path(RECODE_PREFIX + ".pgen"),
         pvar=ws_path(RECODE_PREFIX + ".pvar"),
