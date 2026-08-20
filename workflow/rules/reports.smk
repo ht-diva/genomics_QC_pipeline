@@ -413,7 +413,7 @@ rule generate_stage_qc_report:
         awk 'FNR == 1 && NR != 1 {{next}} {{print}}' \
             {input.rows} > {output.tsv}
         """
-    
+
 rule write_readme:
     output:
         ws_path("README.txt"),
