@@ -180,10 +180,13 @@ def main():
         args.after_pvar
     )
 
-    if args.stage == "raw_input":
+    if args.stage == "input_data":
 
-        n_variants_before = "NA"
-        n_variants_removed = "NA"
+        # The input row represents the starting dataset.
+        # There is no filtering at this stage, so before and after
+        # correspond to the same total number of variants.
+        n_variants_before = n_variants_after
+        n_variants_removed = 0
 
     else:
 
@@ -192,8 +195,8 @@ def main():
         )
 
         n_variants_removed = (
-            n_variants_before
-            - n_variants_after
+                n_variants_before
+                - n_variants_after
         )
 
     # ----------------------------------------------------------
@@ -240,7 +243,7 @@ def main():
     # Structural checks
     # ----------------------------------------------------------
 
-    if args.stage != "raw_input":
+    if args.stage != "input_data":
 
         # A filtering step must not increase variant count.
         if n_variants_removed < 0:

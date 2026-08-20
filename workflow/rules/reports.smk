@@ -169,7 +169,7 @@ rule generate_harmonization_summary_report:
 # ---------------------------------------------------------------------
 
 QC_STAGES = [
-    "raw_input",
+    "input_data",
     "sample_selection",
     "mirror_filtering",
 ]
@@ -184,7 +184,7 @@ if config.get("run", {}).get("remove_multiallelic"):
 
 QC_STAGES.extend(
     [
-        "variant_qc",
+        "mac_filtering",
         "imputation_quality",
         "harmonization",
     ]
@@ -272,7 +272,7 @@ def get_stage_before_file(wildcards, extension):
 
     stage = wildcards.stage
 
-    if stage == "raw_input":
+    if stage == "input_data":
         # For raw_input there is no true "before".
         # We return the same file and set before/removed to NA
         # in generate_full_report.py.
@@ -305,7 +305,7 @@ def get_stage_before_file(wildcards, extension):
             extension,
         )
 
-    elif stage == "variant_qc":
+    elif stage == "mac_filtering":
         return get_pre_variant_qc_file(
             wildcards,
             extension,
@@ -338,7 +338,7 @@ def get_stage_after_file(wildcards, extension):
 
     stage = wildcards.stage
 
-    if stage == "raw_input":
+    if stage == "input_data":
         path = getattr(
             rules.recode_pgen.output,
             extension,
@@ -368,7 +368,7 @@ def get_stage_after_file(wildcards, extension):
             extension,
         )
 
-    elif stage == "variant_qc":
+    elif stage == "mac_filtering":
         path = getattr(
             rules.filter_var.output,
             extension,
