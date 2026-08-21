@@ -24,8 +24,11 @@ rule validate_imputed_input:
             VALIDATE_INPUT_PREFIX + ".dosage_missingness"
         ),
         max_missing_dosage_rate=config.get(
-            "input_validation", {}
-        ).get("max_missing_dosage_rate", 0.0),
+            "input_validation",{}
+        ).get("max_missing_dosage_rate",0.0),
+        autosomes_only=config.get(
+            "input_validation",{}
+        ).get("autosomes_only",True),
     shell:
         r"""
         set -euo pipefail
@@ -41,9 +44,52 @@ rule validate_imputed_input:
             --out {params.validate_prefix} \
             --memory 3000 \
             --threads {threads}
+       
+        # ---------------------------------------------------------
+        # 2. Check autosomal chromosomes
+        # ---------------------------------------------------------
+        if [ "{params.autosomes_only}" = "True" ] || \
+           [ "{params.autosomes_only}" = "true" ]; then
+
+            if ! awk -v expected="{wildcards.chrom}" '
+                /^#/ {{
+                    next
+                }}
+
+                {{
+                    chr = $1
+                    sub(/^chr/, "", chr)
+
+                    # Check that chromosome is an autosome (1-22)
+                    if (
+                        chr !~ /^[0-9]+$/ ||
+                        chr < 1 ||
+                        chr > 22
+                    ) {{
+                        print "ERROR: non-autosomal chromosome found: " $1 \
+                            > "/dev/stderr"
+                        exit 1
+                    }}
+
+                    # Check that chromosome matches the expected chromosome
+                    if (chr != expected) {{
+                        print "ERROR: expected chromosome " expected \
+                              " but found " $1 \
+                            > "/dev/stderr"
+                        exit 1
+                    }}
+                }}
+            ' {input.pvar}
+            then
+                echo "ERROR: chromosome {wildcards.chrom}: autosome validation failed." >&2
+                exit 1
+            fi
+
+            echo "Autosome validation: PASS" >> {output.validate_log}
+        fi
 
         # ---------------------------------------------------------
-        # 2. Check that dosage information exists
+        # 3. Check that dosage information exists
         # ---------------------------------------------------------
         plink2 \
             --pfile {params.pfile} \
@@ -64,7 +110,7 @@ rule validate_imputed_input:
         fi
 
         # ---------------------------------------------------------
-        # 3. Check dosage missingness
+        # 4. Check dosage missingness
         # ---------------------------------------------------------
         plink2 \
             --pfile {params.pfile} \
