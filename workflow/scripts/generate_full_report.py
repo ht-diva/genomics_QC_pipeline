@@ -158,6 +158,18 @@ def main():
     )
 
     parser.add_argument(
+        "--filter-method",
+        required=True,
+        help="Filtering method used at this stage.",
+    )
+
+    parser.add_argument(
+        "--filter-threshold",
+        required=True,
+        help="Filtering threshold used at this stage.",
+    )
+
+    parser.add_argument(
         "--output",
         required=True,
     )
@@ -286,6 +298,8 @@ def main():
         "n_variants_before",
         "n_variants_removed",
         "n_variants_after",
+        "filter_method",
+        "filter_threshold",
         "dosage_status",
         "n_dosages_missing",
         "dosage_missing_rate",
@@ -299,6 +313,8 @@ def main():
         n_variants_before,
         n_variants_removed,
         n_variants_after,
+        args.filter_method,
+        args.filter_threshold,
         dosage_status,
         n_dosages_missing,
         dosage_missing_rate,

@@ -484,6 +484,83 @@ rule generate_stage_qc_plink_metrics:
 # ---------------------------------------------------------------------
 # Generate one row per chromosome x stage
 # ---------------------------------------------------------------------
+def get_stage_filter_method(wildcards):
+    """
+    Return the filtering method used at each stage.
+    """
+
+    stage = wildcards.stage
+
+    if stage == "mirror_filtering":
+        return "mirror_snps"
+
+    elif stage == "problematic_filtering":
+        return "problematic_snps"
+
+    elif stage == "multiallelic_filtering":
+        return "multiallelic"
+
+    elif stage == "mac_filtering":
+        return "MAC"
+
+    elif stage == "imputation_quality":
+        return config.get(
+            "run", {}
+        ).get(
+            "filter_by_imputation_quality",
+            "none",
+        )
+
+    return "NA"
+
+
+def get_stage_filter_threshold(wildcards):
+    """
+    Return the threshold used by filtering steps.
+    """
+
+    stage = wildcards.stage
+
+    # MAC threshold
+    if stage == "mac_filtering":
+        return config.get(
+            "plink2_dict", {}
+        ).get(
+            "mac",
+            "NA",
+        )
+
+    # Imputation-quality threshold
+    elif stage == "imputation_quality":
+
+        method = config.get(
+            "run", {}
+        ).get(
+            "filter_by_imputation_quality",
+            "none",
+        )
+
+        if method == "info_score":
+            return config.get(
+                "INFO_score",
+                "NA",
+            )
+
+        elif method == "minimac3":
+            return config.get(
+                "plink2_dict", {}
+            ).get(
+                "minimac3-r2-filter",
+                "NA",
+            )
+
+        elif method == "none":
+            return "NA"
+
+    return "NA"
+
+
+
 
 rule generate_stage_qc_row:
     input:
@@ -520,6 +597,9 @@ rule generate_stage_qc_row:
         "docker://ghcr.io/ht-diva/containers/python_ds:406993"
     resources:
         runtime=lambda wildcards, attempt: attempt * 10,
+    params:
+        filter_method=get_stage_filter_method,
+        filter_threshold=get_stage_filter_threshold,
     shell:
         """
         python workflow/scripts/generate_full_report.py \
@@ -530,9 +610,10 @@ rule generate_stage_qc_row:
             --vmiss {input.vmiss} \
             --chromosome {wildcards.chrom} \
             --stage {wildcards.stage} \
+            --filter-method {params.filter_method} \
+            --filter-threshold {params.filter_threshold} \
             --output {output.tsv}
         """
-
 
 # ---------------------------------------------------------------------
 # Combine all rows into one report
