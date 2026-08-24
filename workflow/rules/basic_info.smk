@@ -68,42 +68,35 @@ rule validate_imputed_input:
         # ---------------------------------------------------------
         # 2. Validate autosomal chromosome labels
         # ---------------------------------------------------------
+        
         if [ "{params.autosomes_only}" = "True" ] || \
            [ "{params.autosomes_only}" = "true" ]; then
 
-            if ! awk -v expected="{wildcards.chrom}" '
-                /^#/ {{
-                    next
-                }}
+            if ! awk -v expected="{wildcards.chrom}" \
+                '/^#/ {{next}}
+                 {{
+                     chr = $1
+                     sub(/^chr/, "", chr)
 
-                {{
-                    chr = $1
-                    sub(/^chr/, "", chr)
-
-                    if (
-                        chr !~ /^[0-9]+$/ ||
-                        chr < 1 ||
-                        chr > 22
-                    ) {{
-                        print "ERROR: non-autosomal chromosome found: " $1 > "/dev/stderr"
-                        exit 1
-                    }}
-
-                    if (chr != expected) {{
-                        print "ERROR: expected chromosome " expected " but found " $1 > "/dev/stderr"
-                        exit 1
-                    }}
-                }}
-            ' {input.pvar}
+                     if (
+                         chr !~ /^[0-9]+$/ ||
+                         chr < 1 ||
+                         chr > 22 ||
+                         chr != expected
+                     ) {{
+                         exit 1
+                     }}
+                 }}' \
+                {input.pvar}
             then
-                echo "ERROR: chromosome {wildcards.chrom}: autosome validation failed." >&2
+                echo "ERROR: chromosome {wildcards.chrom}: invalid or unexpected chromosome label." >&2
                 exit 1
             fi
 
             echo "Autosome validation: PASS" \
                 >> {output.validate_log}
         fi
-
+    
         # ---------------------------------------------------------
         # 3. Check that dosage information exists
         # ---------------------------------------------------------
@@ -182,7 +175,7 @@ rule validate_imputed_input:
 
         echo "Chromosome {wildcards.chrom}: input validation PASSED"
         """
-    
+
 rule list_rs:
     input:
         directory_path=expand(
