@@ -7,12 +7,22 @@ rule validate_imputed_input:
         pvar=get_pvar(),
         psam=get_pgen(stem=True) + ".psam",
     output:
-        validate_log=ws_path(VALIDATE_INPUT_PREFIX + ".validate.log"),
-        pgen_info=ws_path(VALIDATE_INPUT_PREFIX + ".pgen_info.txt"),
-        dosage_log=ws_path(VALIDATE_INPUT_PREFIX + ".dosage_missingness.log"),
-        ok=touch(ws_path(VALIDATE_INPUT_PREFIX + ".ok")),
+        validate_log=ws_path(
+            VALIDATE_INPUT_PREFIX + ".validate.log"
+        ),
+        pgen_info=ws_path(
+            VALIDATE_INPUT_PREFIX + ".pgen_info.txt"
+        ),
+        dosage_log=ws_path(
+            VALIDATE_INPUT_PREFIX + ".dosage_missingness.log"
+        ),
+        ok=touch(
+            ws_path(VALIDATE_INPUT_PREFIX + ".ok")
+        ),
     container:
         "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
+    threads:
+        8
     resources:
         runtime=lambda wc, attempt: attempt * 60,
     params:
@@ -24,11 +34,15 @@ rule validate_imputed_input:
             VALIDATE_INPUT_PREFIX + ".dosage_missingness"
         ),
         max_missing_dosage_rate=config.get(
-            "input_validation",{}
-        ).get("max_missing_dosage_rate",0.0),
+            "input_validation", {}
+        ).get(
+            "max_missing_dosage_rate", 0.0
+        ),
         autosomes_only=config.get(
-            "input_validation",{}
-        ).get("autosomes_only",True),
+            "input_validation", {}
+        ).get(
+            "autosomes_only", True
+        ),
     shell:
         r"""
         set -euo pipefail
@@ -44,7 +58,7 @@ rule validate_imputed_input:
             --out {params.validate_prefix} \
             --memory 3000 \
             --threads {threads}
-       
+
         # ---------------------------------------------------------
         # 2. Check autosomal chromosomes
         # ---------------------------------------------------------
@@ -66,16 +80,13 @@ rule validate_imputed_input:
                         chr < 1 ||
                         chr > 22
                     ) {{
-                        print "ERROR: non-autosomal chromosome found: " $1 \
-                            > "/dev/stderr"
+                        print "ERROR: non-autosomal chromosome found: " $1 > "/dev/stderr"
                         exit 1
                     }}
 
                     # Check that chromosome matches the expected chromosome
                     if (chr != expected) {{
-                        print "ERROR: expected chromosome " expected \
-                              " but found " $1 \
-                            > "/dev/stderr"
+                        print "ERROR: expected chromosome " expected " but found " $1 > "/dev/stderr"
                         exit 1
                     }}
                 }}
@@ -85,7 +96,8 @@ rule validate_imputed_input:
                 exit 1
             fi
 
-            echo "Autosome validation: PASS" >> {output.validate_log}
+            echo "Autosome validation: PASS" \
+                >> {output.validate_log}
         fi
 
         # ---------------------------------------------------------
@@ -98,12 +110,18 @@ rule validate_imputed_input:
             --threads {threads} \
             > {output.pgen_info} 2>&1
 
-        if grep -qi "No dosages present" {output.pgen_info}; then
+        if grep -qi \
+            "No dosages present" \
+            {output.pgen_info}
+        then
             echo "ERROR: chromosome {wildcards.chrom}: no dosage information found." >&2
             exit 1
         fi
 
-        if ! grep -Eqi "dosages present" {output.pgen_info}; then
+        if ! grep -Eqi \
+            "dosages present" \
+            {output.pgen_info}
+        then
             echo "ERROR: chromosome {wildcards.chrom}: could not confirm dosage information." >&2
             cat {output.pgen_info} >&2
             exit 1
@@ -120,7 +138,8 @@ rule validate_imputed_input:
             --threads {threads}
 
         rate=$(
-            grep -Eio 'genotyping rate is (exactly )?[0-9.eE+-]+' \
+            grep -Eio \
+                'genotyping rate is (exactly )?[0-9.eE+-]+' \
                 {output.dosage_log} \
             | tail -n 1 \
             | awk '{{print $NF}}'
@@ -132,12 +151,15 @@ rule validate_imputed_input:
         fi
 
         missing_rate=$(
-            awk -v r="$rate" 'BEGIN {{printf "%.10f", 1-r}}'
+            awk -v r="$rate" \
+                'BEGIN {{printf "%.10f", 1-r}}'
         )
 
         echo "" >> {output.dosage_log}
-        echo "Dosage missingness: $missing_rate" >> {output.dosage_log}
-        echo "Maximum allowed:    {params.max_missing_dosage_rate}" >> {output.dosage_log}
+        echo "Dosage missingness: $missing_rate" \
+            >> {output.dosage_log}
+        echo "Maximum allowed:    {params.max_missing_dosage_rate}" \
+            >> {output.dosage_log}
 
         if ! awk \
             -v missing="$missing_rate" \
