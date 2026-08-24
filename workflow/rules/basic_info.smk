@@ -68,10 +68,11 @@ rule validate_imputed_input:
         # ---------------------------------------------------------
         # 2. Validate autosomal chromosome labels
         # ---------------------------------------------------------
-
+        
         if [ "{params.autosomes_only}" = "True" ] || \
            [ "{params.autosomes_only}" = "true" ]; then
 
+            # Check that the expected chromosome is between 1 and 22
             if ! printf '%s\n' "{wildcards.chrom}" \
                 | grep -Eq '^([1-9]|1[0-9]|2[0-2])$'
             then
@@ -79,9 +80,22 @@ rule validate_imputed_input:
                 exit 1
             fi
 
+            # Count variants, excluding headers and empty lines
+            n_variants=$(
+                grep -vcE '^(#|[[:space:]]*$)' {input.pvar} \
+                || true
+            )
+
+            if [ "$n_variants" -eq 0 ]; then
+                echo "ERROR: chromosome {wildcards.chrom}: no variants found in the PVAR file." >&2
+                exit 1
+            fi
+
+            # Normalize chromosome labels and identify unexpected ones
             unexpected_chr=$(
-                grep -v '^#' {input.pvar} \
+                grep -vE '^(#|[[:space:]]*$)' {input.pvar} \
                 | cut -f1 \
+                | tr '[:upper:]' '[:lower:]' \
                 | sed 's/^chr//' \
                 | grep -vx "{wildcards.chrom}" \
                 | head -n 1 \
@@ -93,9 +107,13 @@ rule validate_imputed_input:
                 exit 1
             fi
 
+            echo "Number of variants: $n_variants" \
+                >> {output.validate_log}
             echo "Autosome validation: PASS" \
                 >> {output.validate_log}
         fi
+
+       
     
         # ---------------------------------------------------------
         # 3. Check that dosage information exists
