@@ -9,7 +9,7 @@ before processing, applies configurable sample and variant filters, harmonizes v
 identifiers and alleles, merges the chromosome-level results, exports final PGEN and BED datasets, 
 and generates QC reports.
 
-## Features
+## Main features
 
 - **Early input validation**: checks PGEN integrity, chromosome labels, variant presence, dosage availability, and dosage missingness before downstream processing.
 - **Chromosome-aware processing**: processes chromosome-specific PGEN/PVAR/PSAM trios and prevents files assigned to the wrong chromosome from entering the workflow.
@@ -17,11 +17,11 @@ and generates QC reports.
 - **Variant identifier standardization**: converts variant identifiers to a consistent `CHR:POS:REF:ALT` representation.
 - **Mirror-variant filtering**: identifies and removes variants represented with reversed allele order at the same position.
 - **Optional problematic-variant filtering**: removes variants supplied in a project-specific exclusion list.
-- **Configurable variant QC**: removes variants below the configured minor allele count threshold.
+- **Configurable MAC filtering**: removes variants below the configured minor allele count threshold using PLINK 2.
 - **Configurable imputation-quality filtering**: supports INFO-score filtering, MINIMAC3 R² filtering, or no imputation-quality filter.
 - **Variant and allele harmonization**: creates mapping files and standardizes final IDs and allele representations.
-- **Multiple output formats**: produces final PGEN and BED files.
-- **Reporting and traceability**: generates chromosome-level and combined QC summaries.
+- **Multiple output formats**: produces final PLINK 2 PGEN and PLINK 1 BED datasets.
+- **Reporting and traceability**: generates chromosome-level and combined QC summaries together with run metadata.
 - **Reproducible execution**: uses Snakemake, a SLURM profile, and containerized bioinformatics tools.
 
 ## Requirements
@@ -176,9 +176,6 @@ sample_selection_method: "keep-fam"
 id_list_path: "/path/to/sample_ids.fam"
 
 plink2_dict:
-  mind: 0.1
-  geno: 0.1
-  hwe: 1e-15
   mac: 10
 
 export_output_fmt: "bgen-1.1"
@@ -212,18 +209,15 @@ INFO_score: "0.7"
 
 The format of `id_list_path` must match the selected method.
 
-### Variant-QC parameters
+### MAC-filtering parameter
 
-Parameters under `plink2_dict` are passed to the corresponding PLINK 2 filters:
+The MAC threshold is configured under `plink2_dict` and passed to PLINK 2:
 
 | Parameter | Meaning |
 | --- | --- |
-| `mind` | Maximum per-sample missing genotype rate. |
-| `geno` | Maximum per-variant missing genotype rate. |
-| `hwe` | Hardy–Weinberg equilibrium threshold. |
-| `mac` | Minimum minor allele count. |
+| `mac` | Minimum minor allele count required for a variant to be retained. |
 
-Thresholds must be selected for the study design and sample size; the example values are not universal recommendations.
+The threshold must be selected for the study design and sample size; the example value is not a universal recommendation.
 
 ### Imputation-quality strategies
 
@@ -341,9 +335,9 @@ These mirror variants are recorded and removed to avoid ambiguous downstream rep
 
 When enabled, the supplied problematic-variant list is normalized and matching variants are removed. When disabled, the workflow continues from the mirror-filtered dataset.
 
-### 7. PLINK 2 QC filtering
+### 7. PLINK 2 MAC filtering
 
-The workflow applies the configured sample and variant thresholds, including genotype missingness, HWE, and MAC filters as implemented by the relevant rules.
+The workflow uses PLINK 2 to remove variants below the configured minor allele count (MAC) threshold.
 
 ### 8. Optional imputation-quality filtering
 
@@ -383,6 +377,7 @@ results/
 ├── bed/
 │   └── qc_harmonised/
 ├── reports/
+│   ├── all_chromosomes_stage_qc_report.tsv
 │   ├── all_chromosomes_filtering_summary_report.txt
 │   ├── all_chromosomes_filtering_summary_report.tsv
 │   └── all_chromosomes_harmonization_summary_report.txt
@@ -402,17 +397,28 @@ If a validation job fails, Snakemake may remove incomplete files because they ar
 
 ## QC reports
 
-The reporting layer summarizes how sample and variant counts change across the workflow. Depending on the selected path, the filtering report can include stages such as:
+The pipeline generates several complementary QC reports. The main summary file is `all_chromosomes_stage_qc_report.tsv`, which provides a consolidated overview of all processing and QC stages across chromosomes.
+
+The stage QC report includes sample and variant counts before and after each stage, the number of removed variants, filtering methods and thresholds, dosage completeness, dosage missingness, and PASS/FAIL status where available.
+
+Depending on the selected path, the reports can include stages such as:
 
 - input data;
 - sample selection;
 - mirror filtering;
 - problematic-variant filtering;
-- MAC and other PLINK 2 filters;
+- MAC filtering;
 - imputation-quality filtering;
 - final harmonized data.
 
-The combined reports provide chromosome-level counts, numbers removed, filtering methods and thresholds, dosage status, dosage missingness, and overall PASS/FAIL status where available.
+The other combined filtering and harmonization reports provide detailed textual or tabular summaries of their respective workflow sections.
+
+| Report | Description |
+| --- | --- |
+| `all_chromosomes_stage_qc_report.tsv` | Main consolidated chromosome-level summary of all processing and QC stages. |
+| `all_chromosomes_filtering_summary_report.tsv` | Tabular summary of chromosome-level filtering results. |
+| `all_chromosomes_filtering_summary_report.txt` | Human-readable filtering summary. |
+| `all_chromosomes_harmonization_summary_report.txt` | Human-readable summary of harmonization results. |
 
 The generated `README.txt` records run traceability information, including repository state and configuration-related metadata.
 
@@ -521,7 +527,7 @@ The table below groups the principal rules by purpose. Optional rules run only w
 | Problematic variants | `filter_problematic_snps` | Remove variants from the configured problematic-variant list. |
 | Mirror variants | `get_mirror_snps` | Identify reversed-allele variant pairs at the same position. |
 | Mirror variants | `filter_mirror_snps` | Remove identified mirror variants. |
-| Variant QC | `filter_var` | Apply configured PLINK 2 QC thresholds. |
+| MAC filtering | `filter_var` | Remove variants below the configured PLINK 2 MAC threshold. |
 | INFO filtering | `create_bgen` | Convert filtered PGEN data to BGEN for INFO-statistic processing. |
 | INFO filtering | `qctool` | Calculate SNP statistics from BGEN data. |
 | INFO filtering | `get_hq_variants` | Select variants meeting the configured INFO threshold. |
@@ -553,3 +559,4 @@ Contributions, bug reports, and improvement proposals can be submitted through t
 ## Citation
 
 If you use this workflow, cite the repository and record the exact commit or release used for the analysis. The output traceability file should be retained with the final results.
+

@@ -113,8 +113,6 @@ rule validate_imputed_input:
                 >> {output.validate_log}
         fi
 
-       
-    
         # ---------------------------------------------------------
         # 3. Check that dosage information exists
         # ---------------------------------------------------------

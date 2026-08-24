@@ -21,9 +21,6 @@ input_validation:
   max_missing_dosage_rate: 0.0
 
 plink2_dict:
-  mind: 0.1
-  geno: 0.1
-  hwe: 1e-15
   mac: 20
   export_output_fmt: "bgen-1.1"
   minimac3-r2-filter: 0.3
