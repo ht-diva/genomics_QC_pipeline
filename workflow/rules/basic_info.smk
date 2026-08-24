@@ -68,28 +68,28 @@ rule validate_imputed_input:
         # ---------------------------------------------------------
         # 2. Validate autosomal chromosome labels
         # ---------------------------------------------------------
-        
+
         if [ "{params.autosomes_only}" = "True" ] || \
            [ "{params.autosomes_only}" = "true" ]; then
 
-            if ! awk -v expected="{wildcards.chrom}" \
-                '/^#/ {{next}}
-                 {{
-                     chr = $1
-                     sub(/^chr/, "", chr)
-
-                     if (
-                         chr !~ /^[0-9]+$/ ||
-                         chr < 1 ||
-                         chr > 22 ||
-                         chr != expected
-                     ) {{
-                         exit 1
-                     }}
-                 }}' \
-                {input.pvar}
+            if ! printf '%s\n' "{wildcards.chrom}" \
+                | grep -Eq '^([1-9]|1[0-9]|2[0-2])$'
             then
-                echo "ERROR: chromosome {wildcards.chrom}: invalid or unexpected chromosome label." >&2
+                echo "ERROR: chromosome {wildcards.chrom} is not autosomal." >&2
+                exit 1
+            fi
+
+            unexpected_chr=$(
+                grep -v '^#' {input.pvar} \
+                | cut -f1 \
+                | sed 's/^chr//' \
+                | grep -vx "{wildcards.chrom}" \
+                | head -n 1 \
+                || true
+            )
+
+            if [ -n "$unexpected_chr" ]; then
+                echo "ERROR: expected chromosome {wildcards.chrom}, but found $unexpected_chr." >&2
                 exit 1
             fi
 
