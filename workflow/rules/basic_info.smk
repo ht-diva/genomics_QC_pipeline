@@ -47,6 +47,9 @@ rule validate_imputed_input:
         r"""
         set -euo pipefail
 
+        # Create the output directory if it does not exist
+        mkdir -p "$(dirname {output.validate_log})"
+
         echo "Validating chromosome {wildcards.chrom}..."
 
         # ---------------------------------------------------------
@@ -59,8 +62,11 @@ rule validate_imputed_input:
             --memory 3000 \
             --threads {threads}
 
+        echo "PGEN integrity validation: PASS" \
+            >> {output.validate_log}
+
         # ---------------------------------------------------------
-        # 2. Check autosomal chromosomes
+        # 2. Validate autosomal chromosome labels
         # ---------------------------------------------------------
         if [ "{params.autosomes_only}" = "True" ] || \
            [ "{params.autosomes_only}" = "true" ]; then
@@ -74,7 +80,6 @@ rule validate_imputed_input:
                     chr = $1
                     sub(/^chr/, "", chr)
 
-                    # Check that chromosome is an autosome (1-22)
                     if (
                         chr !~ /^[0-9]+$/ ||
                         chr < 1 ||
@@ -84,7 +89,6 @@ rule validate_imputed_input:
                         exit 1
                     }}
 
-                    # Check that chromosome matches the expected chromosome
                     if (chr != expected) {{
                         print "ERROR: expected chromosome " expected " but found " $1 > "/dev/stderr"
                         exit 1
@@ -115,6 +119,7 @@ rule validate_imputed_input:
             {output.pgen_info}
         then
             echo "ERROR: chromosome {wildcards.chrom}: no dosage information found." >&2
+            cat {output.pgen_info} >&2
             exit 1
         fi
 
@@ -142,11 +147,13 @@ rule validate_imputed_input:
                 'genotyping rate is (exactly )?[0-9.eE+-]+' \
                 {output.dosage_log} \
             | tail -n 1 \
-            | awk '{{print $NF}}'
+            | awk '{{print $NF}}' \
+            || true
         )
 
         if [ -z "$rate" ]; then
             echo "ERROR: chromosome {wildcards.chrom}: unable to parse dosage genotyping rate." >&2
+            cat {output.dosage_log} >&2
             exit 1
         fi
 
@@ -175,7 +182,7 @@ rule validate_imputed_input:
 
         echo "Chromosome {wildcards.chrom}: input validation PASSED"
         """
-
+    
 rule list_rs:
     input:
         directory_path=expand(
