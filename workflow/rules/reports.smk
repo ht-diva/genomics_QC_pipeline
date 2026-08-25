@@ -1,8 +1,7 @@
 rule generate_sample_filtering_report:
     input:
-        # Input files from different stages
-        original_psam=rules.recode_pgen.output.psam,  # psam file
-        filtered_psam=rules.select_samples.output.psam,  # psam file
+        original_psam=rules.recode_pgen.output.psam,
+        filtered_psam=rules.select_samples.output.psam,
     output:
         ws_path("pgen/reports/{chrom}_sample_filtering_report.txt"),
     container:
@@ -12,18 +11,17 @@ rule generate_sample_filtering_report:
     params:
         chrom=lambda wildcards: wildcards.chrom,
         method=get_valid_method(),
-        mind=config.get("plink2_dict").get("mind"),
         id_list=config.get("id_list_path"),
     shell:
-        """python workflow/scripts/generate_sample_filtering_report.py \
-                --original-psam {input.original_psam} \
-                --filtered-psam {input.filtered_psam} \
-                --id-list {params.id_list} \
-                --method {params.method} \
-                --mind {params.mind} \
-                --chrom {params.chrom} \
-                > {output}
-            """
+        """
+        python workflow/scripts/generate_sample_filtering_report.py \
+            --original-psam {input.original_psam} \
+            --filtered-psam {input.filtered_psam} \
+            --id-list {params.id_list} \
+            --method {params.method} \
+            --chrom {params.chrom} \
+            > {output}
+        """
 
 
 rule generate_variant_filtering_report:
@@ -178,10 +176,6 @@ QC_STAGES = [
 if config.get("run", {}).get("filter_problematic_snps"):
     QC_STAGES.append("problematic_filtering")
 
-# Optional multiallelic filtering
-if config.get("run", {}).get("remove_multiallelic"):
-    QC_STAGES.append("multiallelic_filtering")
-
 QC_STAGES.extend(
     [
         "mac_filtering",
@@ -208,25 +202,6 @@ def get_post_problematic_file(wildcards, extension):
         )
 
     return str(path).format(chrom=wildcards.chrom)
-
-
-def get_pre_variant_qc_file(wildcards, extension):
-    """
-    Return the dataset immediately before filter_var.
-    """
-
-    if config.get("run", {}).get("remove_multiallelic"):
-        path = getattr(
-            rules.filter_multiallelic_var.output,
-            extension,
-        )
-
-        return str(path).format(chrom=wildcards.chrom)
-
-    return get_post_problematic_file(
-        wildcards,
-        extension,
-    )
 
 
 def get_post_imputation_file(wildcards, extension):
@@ -267,15 +242,15 @@ def get_post_imputation_file(wildcards, extension):
 
 def get_stage_before_file(wildcards, extension):
     """
-    Return the dataset immediately BEFORE each report stage.
+    Return the dataset immediately before each report stage.
     """
 
     stage = wildcards.stage
 
     if stage == "input_data":
-        # For raw_input there is no true "before".
-        # We return the same file and set before/removed to NA
-        # in generate_full_report.py.
+        # There is no true "before" dataset for the input stage.
+        # The same file is returned, while before/removed are set to NA
+        # by generate_full_report.py.
         path = getattr(
             rules.recode_pgen.output,
             extension,
@@ -299,14 +274,8 @@ def get_stage_before_file(wildcards, extension):
             extension,
         )
 
-    elif stage == "multiallelic_filtering":
-        return get_post_problematic_file(
-            wildcards,
-            extension,
-        )
-
     elif stage == "mac_filtering":
-        return get_pre_variant_qc_file(
+        return get_post_problematic_file(
             wildcards,
             extension,
         )
@@ -330,10 +299,9 @@ def get_stage_before_file(wildcards, extension):
 
     return str(path).format(chrom=wildcards.chrom)
 
-
 def get_stage_after_file(wildcards, extension):
     """
-    Return the dataset immediately AFTER each report stage.
+    Return the dataset immediately after each report stage.
     """
 
     stage = wildcards.stage
@@ -362,12 +330,6 @@ def get_stage_after_file(wildcards, extension):
             extension,
         )
 
-    elif stage == "multiallelic_filtering":
-        path = getattr(
-            rules.filter_multiallelic_var.output,
-            extension,
-        )
-
     elif stage == "mac_filtering":
         path = getattr(
             rules.filter_var.output,
@@ -392,7 +354,6 @@ def get_stage_after_file(wildcards, extension):
         )
 
     return str(path).format(chrom=wildcards.chrom)
-
 
 def get_stage_qc_prefix(wildcards):
     """
@@ -496,9 +457,6 @@ def get_stage_filter_method(wildcards):
 
     elif stage == "problematic_filtering":
         return "problematic_snps"
-
-    elif stage == "multiallelic_filtering":
-        return "multiallelic"
 
     elif stage == "mac_filtering":
         return "MAC"
