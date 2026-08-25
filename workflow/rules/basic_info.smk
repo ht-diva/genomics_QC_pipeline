@@ -1,6 +1,9 @@
 VALIDATE_INPUT_PREFIX = "pgen/validation/{chrom}_imputed_input"
 
 
+VALIDATE_INPUT_PREFIX = "pgen/validation/{chrom}_imputed_input"
+
+
 rule validate_imputed_input:
     input:
         pgen=get_pgen(),
@@ -38,11 +41,6 @@ rule validate_imputed_input:
         ).get(
             "max_missing_dosage_rate", 0.0
         ),
-        autosomes_only=config.get(
-            "input_validation", {}
-        ).get(
-            "autosomes_only", True
-        ),
     shell:
         r"""
         set -euo pipefail
@@ -66,55 +64,79 @@ rule validate_imputed_input:
             >> {output.validate_log}
 
         # ---------------------------------------------------------
-        # 2. Validate autosomal chromosome labels
+        # 2. Check that the PVAR contains at least one variant
         # ---------------------------------------------------------
-        
-        if [ "{params.autosomes_only}" = "True" ] || \
-           [ "{params.autosomes_only}" = "true" ]; then
+        if ! awk '
+            !/^#/ && NF > 0 {{
+                found = 1
+                exit
+            }}
 
-            # Check that the expected chromosome is between 1 and 22
-            if ! printf '%s\n' "{wildcards.chrom}" \
-                | grep -Eq '^([1-9]|1[0-9]|2[0-2])$'
-            then
-                echo "ERROR: chromosome {wildcards.chrom} is not autosomal." >&2
-                exit 1
-            fi
-
-            # Count variants, excluding headers and empty lines
-            n_variants=$(
-                grep -vcE '^(#|[[:space:]]*$)' {input.pvar} \
-                || true
-            )
-
-            if [ "$n_variants" -eq 0 ]; then
-                echo "ERROR: chromosome {wildcards.chrom}: no variants found in the PVAR file." >&2
-                exit 1
-            fi
-
-            # Normalize chromosome labels and identify unexpected ones
-            unexpected_chr=$(
-                grep -vE '^(#|[[:space:]]*$)' {input.pvar} \
-                | cut -f1 \
-                | tr '[:upper:]' '[:lower:]' \
-                | sed 's/^chr//' \
-                | grep -vx "{wildcards.chrom}" \
-                | head -n 1 \
-                || true
-            )
-
-            if [ -n "$unexpected_chr" ]; then
-                echo "ERROR: expected chromosome {wildcards.chrom}, but found $unexpected_chr." >&2
-                exit 1
-            fi
-
-            echo "Number of variants: $n_variants" \
-                >> {output.validate_log}
-            echo "Autosome validation: PASS" \
-                >> {output.validate_log}
+            END {{
+                exit !found
+            }}
+        ' {input.pvar}; then
+            echo "ERROR: chromosome {wildcards.chrom}: no variants found in the PVAR file." >&2
+            exit 1
         fi
 
+        echo "PVAR non-empty validation: PASS" \
+            >> {output.validate_log}
+
         # ---------------------------------------------------------
-        # 3. Check that dosage information exists
+        # 3. Validate autosomal chromosome labels
+        # ---------------------------------------------------------
+        awk -v expected="{wildcards.chrom}" '
+            BEGIN {{
+                expected_chr = tolower(expected)
+                sub(/^chr/, "", expected_chr)
+
+                # The expected chromosome must be between 1 and 22
+                if (
+                    expected_chr !~ /^[0-9]+$/ ||
+                    expected_chr < 1 ||
+                    expected_chr > 22
+                ) {{
+                    print "ERROR: expected chromosome is not an autosome: " \
+                          expected > "/dev/stderr"
+                    exit 1
+                }}
+            }}
+
+            # Skip headers and empty lines
+            /^#/ || NF == 0 {{
+                next
+            }}
+
+            {{
+                chromosome = tolower($1)
+                sub(/^chr/, "", chromosome)
+
+                # Every chromosome in the PVAR must be an autosome
+                if (
+                    chromosome !~ /^[0-9]+$/ ||
+                    chromosome < 1 ||
+                    chromosome > 22
+                ) {{
+                    print "ERROR: non-autosomal chromosome found: " $1 \
+                          > "/dev/stderr"
+                    exit 1
+                }}
+
+                # Every chromosome must match the expected chromosome
+                if (chromosome != expected_chr) {{
+                    print "ERROR: expected chromosome " expected \
+                          ", but found " $1 > "/dev/stderr"
+                    exit 1
+                }}
+            }}
+        ' {input.pvar}
+
+        echo "Autosomal chromosome validation: PASS" \
+            >> {output.validate_log}
+
+        # ---------------------------------------------------------
+        # 4. Check that dosage information exists
         # ---------------------------------------------------------
         plink2 \
             --pfile {params.pfile} \
@@ -141,8 +163,11 @@ rule validate_imputed_input:
             exit 1
         fi
 
+        echo "Dosage information validation: PASS" \
+            >> {output.validate_log}
+
         # ---------------------------------------------------------
-        # 4. Check dosage missingness
+        # 5. Check dosage missingness
         # ---------------------------------------------------------
         plink2 \
             --pfile {params.pfile} \
@@ -188,6 +213,9 @@ rule validate_imputed_input:
         fi
 
         echo "PASS" >> {output.dosage_log}
+
+        echo "Dosage missingness validation: PASS" \
+            >> {output.validate_log}
 
         echo "Chromosome {wildcards.chrom}: input validation PASSED"
         """

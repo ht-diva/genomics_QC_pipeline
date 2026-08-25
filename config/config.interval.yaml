@@ -16,7 +16,6 @@ sample_selection_method: 'keep-fam' # options: keep, keep-fam, remove, remove-fa
 id_list_path: '/exchange/healthds/pQTL/INTERVAL/Genetic_QC_files/cleaned_genotype_INTERVAL.fam'
 
 input_validation:
-  autosomes_only: True
   max_missing_dosage_rate: 0.0
 
 plink2_dict:
