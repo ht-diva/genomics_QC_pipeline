@@ -164,7 +164,483 @@ rule generate_harmonization_summary_report:
 {input.update_id_log} \
 {input.update_alleles_log} \
 """
+# ---------------------------------------------------------------------
+# Full stage QC report
+# ---------------------------------------------------------------------
 
+QC_STAGES = [
+    "input_data",
+    "sample_selection",
+    "mirror_filtering",
+]
+
+# Optional problematic-SNP filtering
+if config.get("run", {}).get("filter_problematic_snps"):
+    QC_STAGES.append("problematic_filtering")
+
+# Optional multiallelic filtering
+if config.get("run", {}).get("remove_multiallelic"):
+    QC_STAGES.append("multiallelic_filtering")
+
+QC_STAGES.extend(
+    [
+        "mac_filtering",
+        "imputation_quality",
+        "harmonization",
+    ]
+)
+
+
+def get_post_problematic_file(wildcards, extension):
+    """
+    Return the dataset after mirror/problematic SNP filtering.
+    """
+
+    if config.get("run", {}).get("filter_problematic_snps"):
+        path = getattr(
+            rules.filter_problematic_snps.output,
+            extension,
+        )
+    else:
+        path = getattr(
+            rules.filter_mirror_snps.output,
+            extension,
+        )
+
+    return str(path).format(chrom=wildcards.chrom)
+
+
+def get_pre_variant_qc_file(wildcards, extension):
+    """
+    Return the dataset immediately before filter_var.
+    """
+
+    if config.get("run", {}).get("remove_multiallelic"):
+        path = getattr(
+            rules.filter_multiallelic_var.output,
+            extension,
+        )
+
+        return str(path).format(chrom=wildcards.chrom)
+
+    return get_post_problematic_file(
+        wildcards,
+        extension,
+    )
+
+
+def get_post_imputation_file(wildcards, extension):
+    """
+    Return the dataset after the configured imputation-quality step.
+    """
+
+    filtering_method = config.get("run", {}).get(
+        "filter_by_imputation_quality"
+    )
+
+    if filtering_method == "none":
+        path = getattr(
+            rules.filter_var.output,
+            extension,
+        )
+
+    elif filtering_method == "info_score":
+        path = getattr(
+            rules.filter_hq_variants.output,
+            extension,
+        )
+
+    elif filtering_method == "minimac3":
+        path = getattr(
+            rules.filter_by_minimac3.output,
+            extension,
+        )
+
+    else:
+        raise ValueError(
+            "Unknown filter_by_imputation_quality value: "
+            f"{filtering_method}"
+        )
+
+    return str(path).format(chrom=wildcards.chrom)
+
+
+def get_stage_before_file(wildcards, extension):
+    """
+    Return the dataset immediately BEFORE each report stage.
+    """
+
+    stage = wildcards.stage
+
+    if stage == "input_data":
+        # For raw_input there is no true "before".
+        # We return the same file and set before/removed to NA
+        # in generate_full_report.py.
+        path = getattr(
+            rules.recode_pgen.output,
+            extension,
+        )
+
+    elif stage == "sample_selection":
+        path = getattr(
+            rules.recode_pgen.output,
+            extension,
+        )
+
+    elif stage == "mirror_filtering":
+        path = getattr(
+            rules.select_samples.output,
+            extension,
+        )
+
+    elif stage == "problematic_filtering":
+        path = getattr(
+            rules.filter_mirror_snps.output,
+            extension,
+        )
+
+    elif stage == "multiallelic_filtering":
+        return get_post_problematic_file(
+            wildcards,
+            extension,
+        )
+
+    elif stage == "mac_filtering":
+        return get_pre_variant_qc_file(
+            wildcards,
+            extension,
+        )
+
+    elif stage == "imputation_quality":
+        path = getattr(
+            rules.filter_var.output,
+            extension,
+        )
+
+    elif stage == "harmonization":
+        return get_post_imputation_file(
+            wildcards,
+            extension,
+        )
+
+    else:
+        raise ValueError(
+            f"Unknown QC stage: {stage}"
+        )
+
+    return str(path).format(chrom=wildcards.chrom)
+
+
+def get_stage_after_file(wildcards, extension):
+    """
+    Return the dataset immediately AFTER each report stage.
+    """
+
+    stage = wildcards.stage
+
+    if stage == "input_data":
+        path = getattr(
+            rules.recode_pgen.output,
+            extension,
+        )
+
+    elif stage == "sample_selection":
+        path = getattr(
+            rules.select_samples.output,
+            extension,
+        )
+
+    elif stage == "mirror_filtering":
+        path = getattr(
+            rules.filter_mirror_snps.output,
+            extension,
+        )
+
+    elif stage == "problematic_filtering":
+        path = getattr(
+            rules.filter_problematic_snps.output,
+            extension,
+        )
+
+    elif stage == "multiallelic_filtering":
+        path = getattr(
+            rules.filter_multiallelic_var.output,
+            extension,
+        )
+
+    elif stage == "mac_filtering":
+        path = getattr(
+            rules.filter_var.output,
+            extension,
+        )
+
+    elif stage == "imputation_quality":
+        return get_post_imputation_file(
+            wildcards,
+            extension,
+        )
+
+    elif stage == "harmonization":
+        path = getattr(
+            rules.update_pgen_alleles.output,
+            extension,
+        )
+
+    else:
+        raise ValueError(
+            f"Unknown QC stage: {stage}"
+        )
+
+    return str(path).format(chrom=wildcards.chrom)
+
+
+def get_stage_qc_prefix(wildcards):
+    """
+    Return the PLINK --pfile prefix for the dataset after each stage.
+    """
+
+    pgen = get_stage_after_file(
+        wildcards,
+        "pgen",
+    )
+
+    if not pgen.endswith(".pgen"):
+        raise ValueError(
+            f"Expected .pgen file, got: {pgen}"
+        )
+
+    return pgen[:-5]
+
+
+# ---------------------------------------------------------------------
+# Generate PLINK dosage metrics for every chromosome x stage
+# ---------------------------------------------------------------------
+
+rule generate_stage_qc_plink_metrics:
+    input:
+        pgen=lambda wc: get_stage_after_file(
+            wc,
+            "pgen",
+        ),
+        pvar=lambda wc: get_stage_after_file(
+            wc,
+            "pvar",
+        ),
+        psam=lambda wc: get_stage_after_file(
+            wc,
+            "psam",
+        ),
+    output:
+        pgen_info=temp(
+            ws_path(
+                "pgen/reports/stage_qc/"
+                "{chrom}.{stage}.pgen_info.log"
+            )
+        ),
+        vmiss=temp(
+            ws_path(
+                "pgen/reports/stage_qc/"
+                "{chrom}.{stage}.missing.vmiss"
+            )
+        ),
+        missing_log=temp(
+            ws_path(
+                "pgen/reports/stage_qc/"
+                "{chrom}.{stage}.missing.log"
+            )
+        ),
+    container:
+        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
+    resources:
+        runtime=lambda wildcards, attempt: attempt * 60,
+    params:
+        pfile=get_stage_qc_prefix,
+
+        pgen_info_prefix=lambda wc: ws_path(
+            "pgen/reports/stage_qc/"
+            f"{wc.chrom}.{wc.stage}.pgen_info"
+        ),
+
+        missing_prefix=lambda wc: ws_path(
+            "pgen/reports/stage_qc/"
+            f"{wc.chrom}.{wc.stage}.missing"
+        ),
+    shell:
+        """
+        mkdir -p $(dirname {output.pgen_info})
+
+        plink2 \
+            --pfile {params.pfile} \
+            --pgen-info \
+            --out {params.pgen_info_prefix}
+
+        plink2 \
+            --pfile {params.pfile} \
+            --missing variant-only vcols=nmissdosage,nobs \
+            --out {params.missing_prefix}
+        """
+
+
+# ---------------------------------------------------------------------
+# Generate one row per chromosome x stage
+# ---------------------------------------------------------------------
+def get_stage_filter_method(wildcards):
+    """
+    Return the filtering method used at each stage.
+    """
+
+    stage = wildcards.stage
+
+    if stage == "mirror_filtering":
+        return "mirror_snps"
+
+    elif stage == "problematic_filtering":
+        return "problematic_snps"
+
+    elif stage == "multiallelic_filtering":
+        return "multiallelic"
+
+    elif stage == "mac_filtering":
+        return "MAC"
+
+    elif stage == "imputation_quality":
+        return config.get(
+            "run", {}
+        ).get(
+            "filter_by_imputation_quality",
+            "none",
+        )
+
+    return "NA"
+
+
+def get_stage_filter_threshold(wildcards):
+    """
+    Return the threshold used by filtering steps.
+    """
+
+    stage = wildcards.stage
+
+    # MAC threshold
+    if stage == "mac_filtering":
+        return config.get(
+            "plink2_dict", {}
+        ).get(
+            "mac",
+            "NA",
+        )
+
+    # Imputation-quality threshold
+    elif stage == "imputation_quality":
+
+        method = config.get(
+            "run", {}
+        ).get(
+            "filter_by_imputation_quality",
+            "none",
+        )
+
+        if method == "info_score":
+            return config.get(
+                "INFO_score",
+                "NA",
+            )
+
+        elif method == "minimac3":
+            return config.get(
+                "plink2_dict", {}
+            ).get(
+                "minimac3-r2-filter",
+                "NA",
+            )
+
+        elif method == "none":
+            return "NA"
+
+    return "NA"
+
+
+
+
+rule generate_stage_qc_row:
+    input:
+        before_pvar=lambda wc: get_stage_before_file(
+            wc,
+            "pvar",
+        ),
+
+        after_pvar=lambda wc: get_stage_after_file(
+            wc,
+            "pvar",
+        ),
+
+        psam=lambda wc: get_stage_after_file(
+            wc,
+            "psam",
+        ),
+
+        pgen_info=(
+            rules.generate_stage_qc_plink_metrics.output.pgen_info
+        ),
+
+        vmiss=(
+            rules.generate_stage_qc_plink_metrics.output.vmiss
+        ),
+    output:
+        tsv=temp(
+            ws_path(
+                "pgen/reports/stage_qc/"
+                "{chrom}.{stage}.tsv"
+            )
+        ),
+    container:
+        "docker://ghcr.io/ht-diva/containers/python_ds:406993"
+    resources:
+        runtime=lambda wildcards, attempt: attempt * 10,
+    params:
+        filter_method=get_stage_filter_method,
+        filter_threshold=get_stage_filter_threshold,
+    shell:
+        """
+        python workflow/scripts/generate_full_report.py \
+            --before-pvar {input.before_pvar} \
+            --after-pvar {input.after_pvar} \
+            --psam {input.psam} \
+            --pgen-info {input.pgen_info} \
+            --vmiss {input.vmiss} \
+            --chromosome {wildcards.chrom} \
+            --stage {wildcards.stage} \
+            --filter-method {params.filter_method} \
+            --filter-threshold {params.filter_threshold} \
+            --output {output.tsv}
+        """
+
+# ---------------------------------------------------------------------
+# Combine all rows into one report
+# ---------------------------------------------------------------------
+
+rule generate_stage_qc_report:
+    input:
+        rows=expand(
+            ws_path(
+                "pgen/reports/stage_qc/"
+                "{chrom}.{stage}.tsv"
+            ),
+            chrom=get_chromosomes(),
+            stage=QC_STAGES,
+        ),
+    output:
+        tsv=ws_path(
+            "pgen/reports/"
+            "all_chromosomes_stage_qc_report.tsv"
+        ),
+    resources:
+        runtime=lambda wildcards, attempt: attempt * 10,
+    shell:
+        """
+        awk 'FNR == 1 && NR != 1 {{next}} {{print}}' \
+            {input.rows} > {output.tsv}
+        """
 
 rule write_readme:
     output:

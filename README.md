@@ -2,150 +2,563 @@
 A comprehensive quality control pipeline for cleaning and preparing imputed genotype data for protein quantitative trait locus (pQTL) analysis.
 This pipeline is based on Alessia Mapelli and Solène Cadiou's work, and has been adapted for reproducible genomic data processing.
 
-## Features
+A reproducible Snakemake workflow for validating, quality-controlling, harmonizing, 
+and preparing imputed genotype data for downstream analyses, including protein quantitative 
+trait locus (pQTL) studies.
 
-- **Comprehensive QC**: Filters mirror SNPs, problematic variants, and low-quality samples
-- **Format Conversion**: Handles PGEN and BED formats
-- **Harmonization**: Standardizes variant IDs and alleles across datasets
-- **Modular Design**: Configurable for different projects (INTERVAL, BELIEVE, etc.)
-- **Reproducible**: Uses Snakemake workflow management with containerized tools
+The workflow starts from chromosome-specific PGEN datasets, validates the input files 
+before processing, applies configurable sample and variant filters, harmonizes variant 
+identifiers and alleles, merges the chromosome-level results, exports final PGEN and BED datasets, 
+and generates QC reports.
 
+## Main features
 
-### Software Dependencies
-- [Snakemake](https://snakemake.readthedocs.io/) (workflow management)
-- [Singularity](https://sylabs.io/singularity/) (container runtime)
-- Git (version control)
+- **Early input validation**: checks PGEN integrity, chromosome labels, variant presence, dosage availability, and dosage missingness before downstream processing.
+- **Chromosome-aware processing**: processes chromosome-specific PGEN/PVAR/PSAM trios and prevents files assigned to the wrong chromosome from entering the workflow.
+- **Sample selection**: supports PLINK 2 `--keep`, `--keep-fam`, `--remove`, and `--remove-fam` strategies.
+- **Variant identifier standardization**: converts variant identifiers to a consistent `CHR:POS:REF:ALT` representation.
+- **Mirror-variant filtering**: identifies and removes variants represented with reversed allele order at the same position.
+- **Optional problematic-variant filtering**: removes variants supplied in a project-specific exclusion list.
+- **Configurable MAC filtering**: removes variants below the configured minor allele count threshold using PLINK 2.
+- **Configurable imputation-quality filtering**: supports INFO-score filtering, MINIMAC3 R² filtering, or no imputation-quality filter.
+- **Variant and allele harmonization**: creates mapping files and standardizes final IDs and allele representations.
+- **Multiple output formats**: produces final PLINK 2 PGEN and PLINK 1 BED datasets.
+- **Reporting and traceability**: generates chromosome-level and combined QC summaries together with run metadata.
+- **Reproducible execution**: uses Snakemake, a SLURM profile, and containerized bioinformatics tools.
 
-### Configuration
-See [environment.yml](environment.yml) for Python dependencies and [Makefile](Makefile) for common commands.
+## Requirements
 
-## Quick Start
+The host system requires:
 
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/ht-diva/genomics_QC_pipeline.git
-   cd genomics_QC_pipeline
-   ```
+- Linux;
+- Git;
+- Snakemake;
+- Conda or Mamba;
+- Apptainer or Singularity for container execution;
+- SLURM for the supplied cluster profile;
+- Graphviz only when generating the workflow DAG.
 
-2. **Select a project configuration**:
-   ```bash
-   # Choose one of the available configurations
-   make project-interval    # For INTERVAL study
-   make project-believe     # For BELIEVE study
-   make project-<custom>    # For custom configurations
-   ```
+Bioinformatics tools such as PLINK 2 and qctool are executed through the containers declared in the workflow rules.
 
-3. **Run the pipeline**:
-   ```bash
-   sbatch submit.sbatch
+The Python environment is defined in [`environment.yml`](environment.yml). Development and formatting dependencies are defined in [`environment_dev.yml`](environment_dev.yml).
 
+## Input data
+
+### Required genotype files
+
+For every configured chromosome, the workflow expects one matching PLINK 2 file trio:
+
+```text
+chr{chrom}.pgen
+chr{chrom}.pvar
+chr{chrom}.psam
+```
+
+The filename templates are configurable. For example:
+
+```yaml
+pgen_src_path: "/path/to/input"
+pgen_template: "chr{chrom}.pgen"
+pvar_template: "chr{chrom}.pvar"
+```
+
+The `.psam` path is inferred from the PGEN stem, so all three files must share the same basename.
+
+### Input expectations
+
+Before starting the full QC workflow, each chromosome is validated. A valid input dataset must satisfy all enabled checks:
+
+1. The PGEN file must pass PLINK 2 `--validate`.
+2. The PVAR file must contain at least one variant.
+3. When `autosomes_only: true`, the expected chromosome must be between 1 and 22.
+4. Chromosome labels in the PVAR file must match the chromosome being processed.
+5. Labels such as `1`, `chr1`, `CHR1`, and `Chr1` are treated equivalently.
+6. Dosage information must be present in the PGEN file.
+7. Dosage missingness must not exceed the configured maximum.
+
+The validation creates a chromosome-specific `.ok` marker only after all checks pass. Downstream rules depend on these markers, so invalid inputs stop the pipeline before any QC transformation is performed.
+
+### Optional supporting files
+
+Depending on the configuration, the workflow may also require:
+
+- an ID list for sample inclusion or exclusion;
+- a list of problematic variants;
+- a GWASPipe SNP-mapping configuration;
+- project-specific paths for final delivery.
+
+## Installation
+
+Clone the repository and switch to the branch used for this workflow:
+
+```bash
+git clone https://github.com/ht-diva/genomics_QC_pipeline.git
+cd genomics_QC_pipeline
+git switch multiallelic
+```
+
+Create or update the Snakemake environment:
+
+```bash
+make dependencies
+```
+
+For development dependencies:
+
+```bash
+make dev-dependencies
+```
 
 ## Configuration
 
-### Project Selection
-The pipeline supports multiple project configurations stored in `config/config.<name>.yaml`. The active project is set by:
+Project configurations are stored as:
 
-1. Creating/updating the `.project` file, or
-2. Using Makefile helpers (recommended)
-
-### Output Location
-Results are written to the path specified by `workspace_path` in your config file (default: `./results`).
-
-## Pipeline Workflow
-
-The pipeline consists of several processing steps organized in 3 main blocks:
-
-### 1. Quality Control
-- **ID Standardization**: Converts variant IDs to `chr:pos:ref:alt` format
-- **Sample Selection**: Filters to include only individuals with matching proteomic data
-- **Mirror SNP Handling**: Identifies and removes problematic palindromic variants
-- **Variant Filtering**: Removes low-quality variants based on multiple metrics (MAF, HWE, etc.)
-  - **Imputation quality**: Filters based on imputation quality metrics (INFO-score or MINIMAC3)
-
-### 2. Data Harmonization
-- **ID Harmonization**: Arrange the variant IDs in alphabetical order.
-- **Allele Harmonization**: Ensures consistent allele representation across datasets
-
-### 3. Final Preparation
-- **Format Conversion**: Supports PGEN ↔ BED conversions
-- **Merging**: Combines chromosome-specific files into unified datasets
-- **Delivery**: Organizes final outputs in standardized directory structure
-- **Report Generation**: Generates comprehensive summary reports detailing the pipeline's results.
-
-## Output Structure
-
+```text
+config/config.<project>.yaml
 ```
+
+Existing examples include:
+
+- `config/config.example.yaml`;
+- `config/config.believe.yaml`;
+- `config/config.interval.yaml`.
+
+### Selecting a project
+
+Use one of the Makefile helpers:
+
+```bash
+make project-believe
+make project-interval
+make project-example
+```
+
+The selected project name is stored in `.project`. If `.project` is absent, the Makefile uses the default project defined by `DEFAULT_PROJECT`.
+
+To remove the current selection:
+
+```bash
+make clean-project
+```
+
+You can also bypass project selection and call Snakemake with an explicit configuration:
+
+```bash
+snakemake \
+    --profile slurm \
+    --snakefile workflow/Snakefile \
+    --configfile config/config.believe.yaml
+```
+
+### Example configuration
+
+The following example documents the main configuration groups. Adapt paths and thresholds to the study.
+
+```yaml
+run:
+  delivery: false
+  filter_problematic_snps: true
+  filter_by_imputation_quality: "minimac3"
+
+input_validation:
+  autosomes_only: true
+  max_missing_dosage_rate: 0.0
+
+workspace_path: "results"
+
+pgen_src_path: "/path/to/chromosome_files"
+pgen_template: "chr{chrom}.pgen"
+pvar_template: "chr{chrom}.pvar"
+
+dest_path: "/path/to/delivery"
+problematic_snps_path: "/path/to/problematic_snps.txt"
+config_file_path: "config/gwaspipe/config_snp_mapping.yml"
+
+sample_selection_method: "keep-fam"
+id_list_path: "/path/to/sample_ids.fam"
+
+plink2_dict:
+  mac: 10
+
+export_output_fmt: "bgen-1.1"
+minimac3-r2-filter: 0.3
+INFO_score: "0.7"
+```
+
+### Run options
+
+| Option | Values | Description |
+| --- | --- | --- |
+| `delivery` | `true`, `false` | Enables or disables creation of the delivery structure. |
+| `filter_problematic_snps` | `true`, `false` | Enables or disables filtering with the supplied problematic-variant list. |
+| `filter_by_imputation_quality` | `info_score`, `minimac3`, `none` | Selects the imputation-quality filtering strategy. |
+
+### Input-validation options
+
+| Option | Example | Description |
+| --- | ---: | --- |
+| `autosomes_only` | `true` | Requires chromosomes 1–22 and verifies that every PVAR record matches the expected chromosome. |
+| `max_missing_dosage_rate` | `0.0` | Maximum permitted dosage missingness. `0.0` requires complete dosage data. |
+
+### Sample-selection options
+
+| Value | PLINK 2 behavior |
+| --- | --- |
+| `keep` | Keeps sample IDs using `--keep`. |
+| `keep-fam` | Keeps family/sample IDs using `--keep-fam`. |
+| `remove` | Removes sample IDs using `--remove`. |
+| `remove-fam` | Removes family/sample IDs using `--remove-fam`. |
+
+The format of `id_list_path` must match the selected method.
+
+### MAC-filtering parameter
+
+The MAC threshold is configured under `plink2_dict` and passed to PLINK 2:
+
+| Parameter | Meaning |
+| --- | --- |
+| `mac` | Minimum minor allele count required for a variant to be retained. |
+
+The threshold must be selected for the study design and sample size; the example value is not a universal recommendation.
+
+### Imputation-quality strategies
+
+The workflow supports three values for `filter_by_imputation_quality`:
+
+- `info_score`: generates BGEN data, computes qctool SNP statistics, selects variants meeting `INFO_score`, and extracts them from the chromosome-specific PGEN files;
+- `minimac3`: applies the configured `minimac3-r2-filter` threshold;
+- `none`: skips imputation-quality filtering and passes the preceding QC dataset to harmonization.
+
+## Running the pipeline
+
+### Recommended checks
+
+Confirm the selected project:
+
+```bash
+make
+```
+
+Inspect the planned jobs without executing them:
+
+```bash
+make dry-run
+```
+
+Generate a DAG:
+
+```bash
+make dag
+```
+
+This writes `dag.svg`.
+
+### Submit the workflow
+
+Submit the supplied SLURM wrapper:
+
+```bash
+sbatch submit.sbatch
+```
+
+Alternatively, start it through the Makefile from an appropriate execution environment:
+
+```bash
+make run
+```
+
+### Resume an interrupted workflow
+
+Snakemake normally resumes from the existing outputs. To explicitly rerun incomplete jobs:
+
+```bash
+make rerun
+```
+
+### Unlock after an interrupted run
+
+If the controlling Snakemake process was killed, the working directory may remain locked. First confirm that no other Snakemake process is using the same directory, then run:
+
+```bash
+make unlock
+```
+
+Never unlock a directory while another workflow is actively writing the same outputs.
+
+## Pipeline steps
+
+### 1. Input validation
+
+For every chromosome, `validate_imputed_input`:
+
+- creates the validation output directory when necessary;
+- validates PGEN integrity with PLINK 2;
+- confirms that the PVAR file contains variants;
+- normalizes chromosome labels for validation;
+- optionally restricts processing to autosomes;
+- verifies that the PVAR chromosome matches the chromosome wildcard;
+- confirms that dosages are present;
+- calculates dosage genotyping rate and derives dosage missingness;
+- compares dosage missingness with `max_missing_dosage_rate`;
+- creates `{chrom}_imputed_input.ok` only when every check passes.
+
+The validation outputs make it possible to distinguish PGEN corruption, chromosome-label problems, absent dosages, and excessive dosage missingness.
+
+### 2. Variant-list preparation and input summaries
+
+The workflow combines PVAR information across chromosomes to create mapping lists used later in the pipeline. It also generates basic information reports for the original chromosome-specific datasets.
+
+### 3. Variant ID standardization
+
+Variant identifiers are standardized to a coordinate-and-allele representation:
+
+```text
+CHR:POS:REF:ALT
+```
+
+This provides stable identifiers for filtering and harmonization.
+
+### 4. Sample selection
+
+Samples are included or excluded using the method configured by `sample_selection_method` and the file supplied through `id_list_path`.
+
+### 5. Mirror-variant filtering
+
+The workflow identifies variant pairs at the same chromosome and position whose alleles are represented in reversed order, for example:
+
+```text
+1:12345:A:G
+1:12345:G:A
+```
+
+These mirror variants are recorded and removed to avoid ambiguous downstream representation.
+
+### 6. Optional problematic-variant filtering
+
+When enabled, the supplied problematic-variant list is normalized and matching variants are removed. When disabled, the workflow continues from the mirror-filtered dataset.
+
+### 7. PLINK 2 MAC filtering
+
+The workflow uses PLINK 2 to remove variants below the configured minor allele count (MAC) threshold.
+
+### 8. Optional imputation-quality filtering
+
+The selected `info_score`, `minimac3`, or `none` path is applied independently to each chromosome.
+
+### 9. SNP mapping and harmonization
+
+Mapping files are generated for downstream harmonization. Variant identifiers and alleles are then updated to a consistent representation across chromosomes.
+
+### 10. Merge and format conversion
+
+Final chromosome-specific PGEN files are merged into a genome-wide PGEN dataset. The workflow also converts the harmonized data to BED format and merges the chromosome-level BED files.
+
+### 11. Reports and delivery
+
+The workflow creates filtering and harmonization reports. If delivery is enabled, final files are organized under the configured destination path.
+
+## Output structure
+
+The exact filenames depend on configuration and enabled branches. A typical workspace contains:
+
+```text
 results/
-├── bed/
-│   └── qc_harmonised/   # Harmonized BED files ready for analysis
 ├── pgen/
-│   ├── *_impute.info
-│   ├── pseudo_biallelic.txt
-│   ├── qc_harmonised/   # Fully quality-controlled, harmonized PGEN files
-│   ├── recode_rsid.txt
-│   └── reports/
-│       ├── all_chromosomes_filtering_summary_report.txt
-│       ├── all_chromosomes_filtering_summary_report.tsv
-│       └── all_chromosomes_harmonization_summary_report.txt
+│   ├── validation/
+│   │   ├── {chrom}_imputed_input.validate.log
+│   │   ├── {chrom}_imputed_input.pgen_info.txt
+│   │   ├── {chrom}_imputed_input.dosage_missingness.log
+│   │   └── {chrom}_imputed_input.ok
+│   ├── filtering/
+│   ├── qc/
+│   ├── qc_harmonised/
+│   ├── merge_rsids.txt
+│   ├── recode_rsids.txt
+│   ├── pseudo_biallelic_var.txt
+│   └── pseudo_biallelic.txt
+├── bed/
+│   └── qc_harmonised/
+├── reports/
+│   ├── all_chromosomes_stage_qc_report.tsv
+│   ├── all_chromosomes_filtering_summary_report.txt
+│   ├── all_chromosomes_filtering_summary_report.tsv
+│   └── all_chromosomes_harmonization_summary_report.txt
 └── README.txt
 ```
 
-## Rule Reference
+### Validation files
 
-| Steps         | Rule Name                                | Purpose                                                                            | Output Files                                                                              |
-|---------------|------------------------------------------|------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
-| Basic info    |                                          |                                                                                    |                                                                                           |
-|               | `list_rs`                                | Generate lists of rsIDs and pseudo-biallelic variants                              | `merge_rsids.txt`, `recode_rsids.txt`, `pseudo_biallelic_var.txt`, `pseudo_biallelic.txt` |
-|               | `header_info`                            | Generate a basic information report from original dataset per chromosome           | text report                                                                               |
-| QC            |                                          |                                                                                    |                                                                                           |
-|               | `recode_pgen`                            | Replace IDs with chr:pos:ref:alt format                                            | Recoded PGEN files                                                                        |
-|               | `select_sample`                          | Select individuals present in both genomic and proteomic datasets                  | Filtered sample files                                                                     |
-|               | `get_mirror_snps`                        | Identify mirror SNP pairs (X:XXXXXXX:A:B and X:XXXXXXX:B:A)                        | `{chrom}_mirror_snps.txt`                                                                 |
-|               | `filter_mirror_snps`                     | Remove mirror SNPs from dataset                                                    | `{chrom}_filtered_mirror_snps.{pgen,pvar,psam}`                                           |
-|               | `filter_problematic_snps`                | Filter out a list of predefined problematic SNPs                                   | Filtered PGEN files                                                                       |
-|               | `filter_var`                             | Perform QC: remove failed samples, heterozygosity outliers, MAF, and HWE filtering | Quality-controlled PGEN files                                                             |
-|               | `create_bgen`                            | Convert filtered data to BGEN format                                               | `{chrom}_impute_recoded_selected_sample_filtered_var.{bgen,sample}`                       |
-|               | `qctool`                                 | Compute SNP statistics using qctool                                                | `snp-stats_chr_{chrom}_impute_recoded_selected_sample_filtered_var.txt`                   |
-|               | `get_hq_variants`                        | Filter variants with info score > 0.7                                              | List of high-quality variants                                                             |
-|               | `filter_hq_variants`                     | Extract high-quality variants from PGEN files                                      | Chromosome-specific PGEN files with HQ variants                                           |
-|               | `filter_by_minimac3`                     | Extract high-quality variants from PGEN files                                      | Chromosome-specific PGEN files with HQ variants                                           |
-|               | `merge_filter_hq_variants`               | Merge chromosome-specific PGEN files                                               | Combined PGEN file with HQ variants                                                       |
-| Harmonization |                                          |                                                                                    |                                                                                           |
-|               | `build_snp_mapping_files`                | Generate SNP mapping files for harmonization                                       | Mapping table and harmonized PVAR table                                                   |
-|               | `update_pgen_id`                         | Update variant IDs to chr:pos:A0:A1 format (alphabetical order)                    | PGEN files with updated IDs                                                               |
-|               | `update_pgen_alleles`                    | Harmonize alleles to match new IDs                                                 | PGEN files with harmonized alleles                                                        |
-|               | `merge_qc_harmonised_pgen`               | Merge final harmonized PGEN files                                                  | Final combined PGEN file                                                                  |
-|               | `pgen2bed`                               | Convert PGEN to BED format (hard-call-threshold = 0.49999999)                      | BED files with harmonized alleles                                                         |
-|               | `merge_qc_harmonised_bed`                | Merge final harmonized BED files                                                   | Final combined BED file                                                                   |
-| Documentation |                                          |                                                                                    |                                                                                           |
-|               | `write_readme`                           | Generate documentation with traceability information                               | `README.txt` with git information                                                         |
-|               | `generate_chromosome_summary_report`     | Generate a comprehensive report with variant filtering results                     | Text report                                                                               |
-|               | `generate_chromosome_summary_report`     | Generate a table of variant filtering results                                      | TSV table                                                                                 |
-|               | `generate_harmonization_summary_report`  | Generate a comprehensive report with harmonization results                         | Text report                                                                               |
+| File | Meaning |
+| --- | --- |
+| `*.validate.log` | PLINK 2 PGEN validation output plus chromosome-validation status. |
+| `*.pgen_info.txt` | PGEN metadata used to confirm dosage presence. |
+| `*.dosage_missingness.log` | Dosage genotyping-rate output, calculated missingness, configured threshold, and PASS/FAIL status. |
+| `*.ok` | Completion marker created only after all input checks pass. |
 
+If a validation job fails, Snakemake may remove incomplete files because they are declared as rule outputs. Use `--keep-incomplete` during diagnosis when those partial files are needed.
 
+## QC reports
 
-## Workflow example
+The pipeline generates several complementary QC reports. The main summary file is `all_chromosomes_stage_qc_report.tsv`, which provides a consolidated overview of all processing and QC stages across chromosomes.
 
-This graph illustrates the progression of the workflow from the input files to the final outputs. For simplicity, the workflow is restricted to two chromosomes only.
-<img src="dag.svg" alt="example workflow">
+The stage QC report includes sample and variant counts before and after each stage, the number of removed variants, filtering methods and thresholds, dosage completeness, dosage missingness, and PASS/FAIL status where available.
 
-## Customization
+Depending on the selected path, the reports can include stages such as:
 
-To adapt the pipeline for your project:
+- input data;
+- sample selection;
+- mirror filtering;
+- problematic-variant filtering;
+- MAC filtering;
+- imputation-quality filtering;
+- final harmonized data.
 
-1. Create a new config file in `config/config.<your_project>.yaml`
-2. Update paths and parameters as needed
-3. Add any project-specific rules to the appropriate `.smk` files
+The other combined filtering and harmonization reports provide detailed textual or tabular summaries of their respective workflow sections.
 
-## Support
+| Report | Description |
+| --- | --- |
+| `all_chromosomes_stage_qc_report.tsv` | Main consolidated chromosome-level summary of all processing and QC stages. |
+| `all_chromosomes_filtering_summary_report.tsv` | Tabular summary of chromosome-level filtering results. |
+| `all_chromosomes_filtering_summary_report.txt` | Human-readable filtering summary. |
+| `all_chromosomes_harmonization_summary_report.txt` | Human-readable summary of harmonization results. |
 
-For issues or questions:
-- Check existing [GitHub Issues](https://github.com/ht-diva/genomics_QC_pipeline/issues)
-- Refer to the original [INTERVAL QC script](https://github.com/ht-diva/pqtl-believe-interval/blob/main/Script_QC_INTERVAL_genomics.R)
+The generated `README.txt` records run traceability information, including repository state and configuration-related metadata.
 
+## Troubleshooting
+
+### Find the rule-specific SLURM log
+
+Snakemake reports the exact log path when a cluster job fails. Validation logs follow a structure similar to:
+
+```text
+.snakemake/slurm_logs/rule_validate_imputed_input/{chrom}/{job_id}.log
+```
+
+Display the end of the latest log for a chromosome:
+
+```bash
+latest_log=$(ls -t .snakemake/slurm_logs/rule_validate_imputed_input/14/*.log | head -n 1)
+tail -n 100 "$latest_log"
+```
+
+### Preserve partial validation outputs
+
+For targeted diagnosis:
+
+```bash
+snakemake \
+    results/pgen/validation/14_imputed_input.ok \
+    --force \
+    --keep-incomplete \
+    --printshellcmds
+```
+
+Then inspect:
+
+```bash
+cat results/pgen/validation/14_imputed_input.validate.log
+cat results/pgen/validation/14_imputed_input.pgen_info.txt
+cat results/pgen/validation/14_imputed_input.dosage_missingness.log
+```
+
+### Validation directory is absent
+
+The validation rule creates its output directory before running PLINK 2. If it is absent after a failed run, confirm that the current workflow version contains the directory-creation command and that Snakemake is reading the expected checkout and branch.
+
+### `.ok` is absent
+
+The `.ok` file is not a diagnostic log. It is created only after the entire validation rule succeeds. Its absence means that at least one validation check failed or the job was interrupted.
+
+### SLURM reports only `FAILED`
+
+`SLURM status is: FAILED` is a summary, not the underlying cause. Read the rule-specific log and, when necessary, query accounting information:
+
+```bash
+sacct -j JOB_ID \
+    --format=JobID,State,ExitCode,Elapsed,Timelimit,MaxRSS,ReqMem
+```
+
+- `FAILED` with exit code 1 usually indicates a command or validation failure;
+- `OUT_OF_MEMORY` indicates insufficient memory;
+- `TIMEOUT` indicates an insufficient time limit;
+- `NODE_FAIL` indicates a cluster/node failure.
+
+Do not increase resources unless SLURM accounting supports a resource-related cause.
+
+### Working directory is locked
+
+Confirm that no other Snakemake instance is active:
+
+```bash
+squeue -u "$USER"
+pgrep -afu "$USER" snakemake
+```
+
+If none is active, run:
+
+```bash
+make unlock
+```
+
+### Stop submitted jobs
+
+List your jobs:
+
+```bash
+squeue -u "$USER"
+```
+
+Cancel selected jobs with `scancel JOB_ID`. The following command cancels all jobs belonging to the current user and should therefore be used with care:
+
+```bash
+scancel -u "$USER"
+```
+
+## Rule reference
+
+The table below groups the principal rules by purpose. Optional rules run only when selected by the configuration.
+
+| Stage | Rule | Purpose |
+| --- | --- | --- |
+| Input validation | `validate_imputed_input` | Validate PGEN integrity, chromosome labels, variant presence, dosage availability, and dosage missingness. |
+| Input preparation | `list_rs` | Combine PVAR records and generate variant-ID mapping lists. |
+| Input reporting | `header_info` | Generate basic information for each original chromosome dataset. |
+| ID standardization | `recode_pgen` | Replace input variant IDs with standardized coordinate-and-allele IDs. |
+| Sample selection | `select_samples` | Keep or remove samples according to the configured method and ID list. |
+| Problematic variants | `sanitize_problematic_snps` | Normalize the supplied problematic-variant list. |
+| Problematic variants | `filter_problematic_snps` | Remove variants from the configured problematic-variant list. |
+| Mirror variants | `get_mirror_snps` | Identify reversed-allele variant pairs at the same position. |
+| Mirror variants | `filter_mirror_snps` | Remove identified mirror variants. |
+| MAC filtering | `filter_var` | Remove variants below the configured PLINK 2 MAC threshold. |
+| INFO filtering | `create_bgen` | Convert filtered PGEN data to BGEN for INFO-statistic processing. |
+| INFO filtering | `qctool` | Calculate SNP statistics from BGEN data. |
+| INFO filtering | `get_hq_variants` | Select variants meeting the configured INFO threshold. |
+| INFO filtering | `filter_hq_variants` | Extract INFO-filtered variants from PGEN data. |
+| MINIMAC3 filtering | `filter_by_minimac3` | Apply the configured MINIMAC3 R² threshold. |
+| Mapping | `build_snp_mapping_files` | Generate mapping resources for harmonization. |
+| Harmonization | `update_pgen_id` | Update variant identifiers to the harmonized representation. |
+| Harmonization | `update_pgen_alleles` | Align allele representation with harmonized identifiers. |
+| PGEN merge | `merge_qc_harmonised_pgen` | Merge final chromosome-specific PGEN files. |
+| BED conversion | `pgen2bed` | Convert harmonized PGEN data to BED format. |
+| BED merge | `merge_qc_harmonised_bed` | Merge chromosome-specific BED files. |
+| Reporting | `generate_chromosome_summary_report` | Generate filtering summaries in text and tabular formats. |
+| Reporting | `generate_harmonization_summary_report` | Generate the combined harmonization report. |
+| Traceability | `write_readme` | Record run and repository metadata in the output workspace. |
+| Delivery | delivery rules | Copy and organize final deliverables when enabled. |
+
+## Development and acknowledgements
+
+This pipeline builds on work by Alessia Mapelli and Solène Cadiou and was adapted for reproducible genomic-data processing.
+
+Development and implementation were carried out by:
+
+- Gianmauro Cuccuru;
+- Claudia Teresa Maria Giambartolomei;
+- Giulia Pontali.
+
+Contributions, bug reports, and improvement proposals can be submitted through the repository's [GitHub Issues](https://github.com/ht-diva/genomics_QC_pipeline/issues).
 
 ## Citation
 
-If you use this pipeline, please cite:
-- This pipeline repository
+If you use this workflow, cite the repository and record the exact commit or release used for the analysis. The output traceability file should be retained with the final results.
+

@@ -34,14 +34,20 @@ set-resources:
     filter_problematic_snps:
       mem_mb: 1024 + attempt * 1024
       threads: *cores
+    sanitize_problematic_snps:
+      mem_mb: 1024 + attempt * 1024
+      threads: 1
     recode_pgen:
         mem_mb: 102400 + attempt * 2048
+        runtime: attempt * 10
         threads: *cores
     list_rs:
       mem_mb: 102400 + attempt * 2048
       threads: *cores
-    header_info:
+    validate_imputed_input:
         mem_mb: 2048 + attempt * 2048
+        runtime: attempt * 10
+        threads: *cores
     select_samples:
       mem_mb: 102400 + attempt * 2048
       threads: *cores
@@ -82,5 +88,14 @@ set-resources:
       mem_mb: 102400 + attempt * 2048
       threads: *cores
     freq_qc_harmonised_pgen:
+      mem_mb: 102400 + attempt * 2048
+      threads: *cores
+    generate_stage_qc_plink_metrics:
+      mem_mb: 102400 + attempt * 2048
+      threads: *cores
+    generate_stage_qc_row:
+      mem_mb: 102400 + attempt * 2048
+      threads: *cores
+    generate_stage_qc_report:
       mem_mb: 102400 + attempt * 2048
       threads: *cores

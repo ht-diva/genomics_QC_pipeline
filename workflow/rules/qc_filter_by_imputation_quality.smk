@@ -26,7 +26,7 @@ rule create_bgen:
  --pfile {params.pfile} \
  --export {params.export_output_fmt} \
  --out {params.prefix} \
- --threads {resources.threads} \
+ --threads {threads} \
  --memory 19000 'require'
  """
 
@@ -48,7 +48,7 @@ rule qctool:
 -g {input} \
 -snp-stats \
 -osnp {output} \
--threads {resources.threads}
+-threads {threads}
     """
 
 
@@ -104,7 +104,7 @@ rule filter_hq_variants:
  --extract {input[3]} \
  --make-pgen \
  --out {params.prefix} \
- --threads {resources.threads} \
+ --threads {threads} \
  --memory 1900 'require'
  """
 
@@ -141,7 +141,7 @@ rule merge_filter_hq_variants:
  && plink2 --pmerge-list {output.file_list} \
  --make-pgen \
  --out {params.pmerge} \
- --threads {resources.threads} \
+ --threads {threads} \
  --memory 90000 'require'
 """
 
@@ -176,6 +176,6 @@ rule filter_by_minimac3:
  --minimac3-r2-filter {params.minimac3_r2_filter} \
  --make-pgen \
  --out {params.prefix} \
- --threads {resources.threads} \
+ --threads {threads} \
  --memory 19000 'require'
 """

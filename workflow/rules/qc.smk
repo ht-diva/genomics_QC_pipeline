@@ -3,7 +3,8 @@ RECODE_PREFIX = "pgen/qc/{chrom}_impute_recoded"
 
 rule recode_pgen:
     input:
-        get_pgen(),
+        pgen=get_pgen(),
+        validated=rules.validate_imputed_input.output.ok,
     output:
         pgen=ws_path(RECODE_PREFIX + ".pgen"),
         pvar=ws_path(RECODE_PREFIX + ".pvar"),
@@ -22,7 +23,7 @@ rule recode_pgen:
 --new-id-max-allele-len 1000 \
 --make-pgen \
 --out {params.prefix} \
---threads {resources.threads} \
+--threads {threads} \
 --memory 90000 'require'
 """
 
@@ -63,14 +64,12 @@ rule select_samples:
         id_list=config.get("id_list_path"),
         pfile=ws_path(RECODE_PREFIX),
         prefix=ws_path(SELECT_PREFIX),
-        mind=config.get("plink2_dict").get("mind"),
     shell:
         """plink2 \
 --pfile {params.pfile} \
 --{params.method} {params.id_list} \
 --make-pgen \
---mind {params.mind} \
 --out {params.prefix} \
---threads {resources.threads} \
+--threads {threads} \
 --memory 90000 'require'
 """

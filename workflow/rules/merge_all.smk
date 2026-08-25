@@ -28,7 +28,7 @@ rule merge_qc_harmonised_pgen:
  && plink2 --pmerge-list {output.file_list} \
  --make-pgen \
  --out {params.pmerge} \
- --threads {resources.threads} \
+ --threads {threads} \
  --memory 90000 'require'
 """
 
@@ -54,6 +54,6 @@ rule freq_qc_harmonised_pgen:
 --pfile {params.pfile} \
  --freq \
  --out {params.prefix} \
- --threads {resources.threads} \
+ --threads {threads} \
  --memory 90000 'require'
 """
