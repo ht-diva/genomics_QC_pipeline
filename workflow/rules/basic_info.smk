@@ -1,9 +1,5 @@
 VALIDATE_INPUT_PREFIX = "pgen/validation/{chrom}_imputed_input"
 
-
-VALIDATE_INPUT_PREFIX = "pgen/validation/{chrom}_imputed_input"
-
-
 rule validate_imputed_input:
     input:
         pgen=get_pgen(),
@@ -62,23 +58,22 @@ rule validate_imputed_input:
 
         echo "PGEN integrity validation: PASS" \
             >> {output.validate_log}
-
+            
         # ---------------------------------------------------------
         # 2. Check that the PVAR contains at least one variant
         # ---------------------------------------------------------
-        if ! awk '
-            !/^#/ && NF > 0 {{
-                found = 1
-                exit
-            }}
+        n_variants=$(
+            grep -vcE '^(#|[[:space:]]*$)' {input.pvar} \
+            || true
+        )
 
-            END {{
-                exit !found
-            }}
-        ' {input.pvar}; then
+        if [ "$n_variants" -eq 0 ]; then
             echo "ERROR: chromosome {wildcards.chrom}: no variants found in the PVAR file." >&2
             exit 1
         fi
+
+        echo "Number of variants: $n_variants" \
+            >> {output.validate_log}
 
         echo "PVAR non-empty validation: PASS" \
             >> {output.validate_log}
@@ -86,54 +81,42 @@ rule validate_imputed_input:
         # ---------------------------------------------------------
         # 3. Validate autosomal chromosome labels
         # ---------------------------------------------------------
-        awk -v expected="{wildcards.chrom}" '
-            BEGIN {{
-                expected_chr = tolower(expected)
-                sub(/^chr/, "", expected_chr)
 
-                # The expected chromosome must be between 1 and 22
-                if (
-                    expected_chr !~ /^[0-9]+$/ ||
-                    expected_chr < 1 ||
-                    expected_chr > 22
-                ) {{
-                    print "ERROR: expected chromosome is not an autosome: " \
-                          expected > "/dev/stderr"
-                    exit 1
-                }}
-            }}
+        # Normalize the expected chromosome label
+        expected_chr=$(
+            printf '%s\n' "{wildcards.chrom}" \
+            | tr '[:upper:]' '[:lower:]' \
+            | sed 's/^chr//'
+        )
 
-            # Skip headers and empty lines
-            /^#/ || NF == 0 {{
-                next
-            }}
+        # The expected chromosome must be between 1 and 22
+        if ! printf '%s\n' "$expected_chr" \
+            | grep -Eq '^([1-9]|1[0-9]|2[0-2])$'
+        then
+            echo "ERROR: chromosome {wildcards.chrom} is not autosomal." >&2
+            exit 1
+        fi
 
-            {{
-                chromosome = tolower($1)
-                sub(/^chr/, "", chromosome)
+        # Find the first PVAR chromosome that does not match
+        unexpected_chr=$(
+            grep -vE '^(#|[[:space:]]*$)' {input.pvar} \
+            | cut -f1 \
+            | tr '[:upper:]' '[:lower:]' \
+            | sed 's/^chr//' \
+            | grep -vx "$expected_chr" \
+            | head -n 1 \
+            || true
+        )
 
-                # Every chromosome in the PVAR must be an autosome
-                if (
-                    chromosome !~ /^[0-9]+$/ ||
-                    chromosome < 1 ||
-                    chromosome > 22
-                ) {{
-                    print "ERROR: non-autosomal chromosome found: " $1 \
-                          > "/dev/stderr"
-                    exit 1
-                }}
-
-                # Every chromosome must match the expected chromosome
-                if (chromosome != expected_chr) {{
-                    print "ERROR: expected chromosome " expected \
-                          ", but found " $1 > "/dev/stderr"
-                    exit 1
-                }}
-            }}
-        ' {input.pvar}
+        if [ -n "$unexpected_chr" ]; then
+            echo "ERROR: expected chromosome $expected_chr, but found $unexpected_chr." >&2
+            exit 1
+        fi
 
         echo "Autosomal chromosome validation: PASS" \
             >> {output.validate_log}
+
+
 
         # ---------------------------------------------------------
         # 4. Check that dosage information exists
