@@ -1,20 +1,3 @@
-rule sync_tables:
-    input:
-        recode=ws_path("pgen/recode_rsids.txt"),
-        biallelic=ws_path("pgen/pseudo_biallelic.txt"),
-    output:
-        touch(dest_path("pgen/.tables_delivery.done")),
-    params:
-        recode=dest_path("pgen/recode_rsids.txt"),
-        biallelic=dest_path("pgen/pseudo_biallelic.txt"),
-    resources:
-        runtime=lambda wc, attempt: attempt * 90,
-    shell:
-        """
-        rsync -rlptoDvz --chmod "D755,F644" {input.recode} {params.recode} && \
-        rsync -rlptoDvz --chmod "D755,F644" {input.biallelic} {params.biallelic}"""
-
-
 rule sync_header_info:
     input:
         rules.header_info.output,

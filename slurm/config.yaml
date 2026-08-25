@@ -41,9 +41,6 @@ set-resources:
         mem_mb: 102400 + attempt * 2048
         runtime: attempt * 10
         threads: *cores
-    list_rs:
-      mem_mb: 102400 + attempt * 2048
-      threads: *cores
     validate_imputed_input:
         mem_mb: 2048 + attempt * 2048
         runtime: attempt * 10

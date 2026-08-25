@@ -1,11 +1,12 @@
 def get_final_output():
     final_output = []
 
-    final_output.append(rules.list_rs.output.list_recode_rsid)
-    final_output.append(rules.list_rs.output.list_pseudo_biallelic)
-    final_output.append(rules.write_readme.output)
+    # README
+    final_output.append(
+        rules.write_readme.output
+    )
 
-    # Input PGEN validation
+    # Input PGEN validation reports
     final_output.extend(
         expand(
             rules.validate_imputed_input.output.validate_log,
@@ -27,6 +28,7 @@ def get_final_output():
         )
     )
 
+    # Final harmonized PGEN files
     final_output.extend(
         [
             rules.merge_qc_harmonised_pgen.output.pgen,
@@ -35,10 +37,12 @@ def get_final_output():
         ]
     )
 
+    # Final allele-frequency file
     final_output.append(
         rules.freq_qc_harmonised_pgen.output.afreq
     )
 
+    # Final harmonized BED files
     final_output.extend(
         [
             rules.merge_qc_harmonised_bed.output.bed,
@@ -47,35 +51,26 @@ def get_final_output():
         ]
     )
 
-    # add reports
-    final_output.append(
-        rules.generate_chromosome_summary_report.output.tsv
+    # QC reports
+    final_output.extend(
+        [
+            rules.generate_chromosome_summary_report.output.tsv,
+            rules.generate_chromosome_summary_report.output.txt,
+            rules.generate_harmonization_summary_report.output.report,
+            rules.generate_stage_qc_report.output.tsv,
+        ]
     )
 
-    final_output.append(
-        rules.generate_chromosome_summary_report.output.txt
-    )
-
-    final_output.append(
-        rules.generate_harmonization_summary_report.output.report
-    )
-
-    # Stage QC report
-    final_output.append(
-        rules.generate_stage_qc_report.output.tsv
-    )
-
-    if config.get("run").get("delivery"):
-        final_output.append(rules.write_readme.output)
-
-        final_output.append(rules.sync_tables.output)
-
-        final_output.append(
-            rules.sync_pfiles_qc_harmonised_all.output
-        )
-
-        final_output.append(
-            rules.sync_pfiles_qc_harmonised_all_freq.output
+    # Optional delivery
+    if config.get("run", {}).get("delivery"):
+        final_output.extend(
+            [
+                rules.sync_pfiles_qc_harmonised_all.output,
+                rules.sync_pfiles_qc_harmonised_all_freq.output,
+                rules.sync_bedfiles_all.output,
+                rules.sync_reports.output,
+                rules.sync_readme.output,
+            ]
         )
 
         final_output.extend(
@@ -85,23 +80,11 @@ def get_final_output():
             )
         )
 
-        final_output.append(
-            rules.sync_bedfiles_all.output
-        )
-
         final_output.extend(
             expand(
                 rules.sync_bedfiles_c.output,
                 chrom=get_chromosomes(),
             )
-        )
-
-        final_output.append(
-            rules.sync_reports.output
-        )
-
-        final_output.append(
-            rules.sync_readme.output
         )
 
     return final_output
