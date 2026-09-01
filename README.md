@@ -6,7 +6,7 @@ A reproducible Snakemake workflow for validating, quality-controlling, harmonizi
 and preparing imputed genotype data for downstream analyses, including protein quantitative 
 trait locus (pQTL) studies.
 
-The workflow starts from chromosome-specific PGEN datasets, validates the input files 
+The workflow starts from autosomal, chromosome-specific PGEN datasets containing dosage information, validates the input files 
 before processing, applies configurable sample and variant filters, harmonizes variant 
 identifiers and alleles, merges the chromosome-level results, exports final PGEN and BED datasets, 
 and generates QC reports.
@@ -14,7 +14,7 @@ and generates QC reports.
 ## Main features
 
 - **Early input validation**: checks PGEN integrity, chromosome labels, variant presence, dosage availability, and dosage missingness before downstream processing.
-- **Chromosome-aware processing**: processes chromosome-specific PGEN/PVAR/PSAM trios and prevents files assigned to the wrong chromosome from entering the workflow.
+- **Autosome-only, chromosome-aware processing**: processes one dosage-containing PGEN/PVAR/PSAM trio per autosome (chromosomes 1–22) and prevents files assigned to the wrong chromosome from entering the workflow.
 - **Sample selection**: supports PLINK 2 `--keep`, `--keep-fam`, `--remove`, and `--remove-fam` strategies.
 - **Variant identifier standardization**: converts variant identifiers to a consistent `CHR:POS:REF:ALT` representation.
 - **Mirror-variant filtering**: identifies and removes variants represented with reversed allele order at the same position.
@@ -22,7 +22,7 @@ and generates QC reports.
 - **Configurable MAC filtering**: removes variants below the configured minor allele count threshold using PLINK 2.
 - **Configurable imputation-quality filtering**: supports INFO-score filtering, MINIMAC3 R² filtering, or no imputation-quality filter.
 - **Variant and allele harmonization**: creates mapping files and standardizes final IDs and allele representations.
-- **Multiple output formats**: produces final PLINK 2 PGEN and PLINK 1 BED datasets.
+- **Multiple output formats**: produces an authoritative PLINK 2 PGEN dataset and an optional PLINK 1 BED compatibility export based on hard-called dosages.
 - **Reporting and traceability**: generates chromosome-level and combined QC summaries together with run metadata.
 - **Reproducible execution**: uses Snakemake, a SLURM profile, and containerized bioinformatics tools.
 
@@ -46,7 +46,7 @@ The Python environment is defined in [`environment.yml`](environment.yml). Devel
 
 ### Required genotype files
 
-For every configured chromosome, the workflow expects one matching PLINK 2 file trio:
+The workflow accepts autosomes only (chromosomes 1–22). For every configured autosome, it expects one matching, chromosome-specific PLINK 2 file trio:
 
 ```text
 chr{chrom}.pgen
@@ -63,6 +63,7 @@ pvar_template: "chr{chrom}.pvar"
 ```
 
 The `.psam` path is inferred from the PGEN stem, so all three files must share the same basename.
+Each PGEN must contain dosage information. Combined genome-wide inputs and chromosome files containing records from more than one chromosome are not supported.
 
 ### Input expectations
 
@@ -70,7 +71,7 @@ Before starting the full QC workflow, each chromosome is validated. A valid inpu
 
 1. The PGEN file must pass PLINK 2 `--validate`.
 2. The PVAR file must contain at least one variant.
-3. When `autosomes_only: true`, the expected chromosome must be between 1 and 22.
+3. The expected chromosome must be an autosome (1–22).
 4. Chromosome labels in the PVAR file must match the chromosome being processed.
 5. Labels such as `1`, `chr1`, `CHR1`, and `Chr1` are treated equivalently.
 6. Dosage information must be present in the PGEN file.
@@ -89,12 +90,11 @@ Depending on the configuration, the workflow may also require:
 
 ## Installation
 
-Clone the repository and switch to the branch used for this workflow:
+Clone the repository:
 
 ```bash
-git clone https://github.com/ht-diva/genomics_QC_pipeline.git
-cd genomics_QC_pipeline
-git switch multiallelic
+git clone https://github.com/ht-diva/imputed_genotype_QC_pipe.git
+cd imputed_genotype_QC_pipe
 ```
 
 Create or update the Snakemake environment:
@@ -197,7 +197,7 @@ INFO_score: "0.7"
 
 | Option | Example | Description |
 | --- | ---: | --- |
-| `autosomes_only` | `true` | Requires chromosomes 1–22 and verifies that every PVAR record matches the expected chromosome. |
+| `autosomes_only` | `true` | Requires chromosome-specific inputs for autosomes 1–22 and verifies that every PVAR record matches the expected chromosome. This pipeline is designed for autosomal data only. |
 | `max_missing_dosage_rate` | `0.0` | Maximum permitted dosage missingness. `0.0` requires complete dosage data. |
 
 ### Sample-selection options
@@ -295,7 +295,7 @@ For every chromosome, `validate_imputed_input`:
 - validates PGEN integrity with PLINK 2;
 - confirms that the PVAR file contains variants;
 - normalizes chromosome labels for validation;
-- optionally restricts processing to autosomes;
+- requires the expected chromosome to be an autosome (1–22);
 - verifies that the PVAR chromosome matches the chromosome wildcard;
 - confirms that dosages are present;
 - calculates dosage genotyping rate and derives dosage missingness;
@@ -351,7 +351,11 @@ Mapping files are generated for downstream harmonization. Variant identifiers an
 
 ### 10. Merge and format conversion
 
-Final chromosome-specific PGEN files are merged into a genome-wide PGEN dataset. The workflow also converts the harmonized data to BED format and merges the chromosome-level BED files.
+Final chromosome-specific PGEN files are merged into a genome-wide PGEN dataset. This harmonized PGEN is the authoritative imputed dataset.
+
+For compatibility with software that requires PLINK 1 files, the workflow can also convert the harmonized chromosome-level PGEN files to BED and merge them. During this conversion, PLINK 2 is run with `--hard-call-threshold 0.49999999`. This is an extremely permissive threshold, meaning that almost every dosage is converted to its nearest hard call.
+
+> **Warning:** BED is an optional compatibility export and should be used with caution because it is based on hard-called dosages. The harmonized PGEN remains the authoritative imputed dataset. If the PGEN contains true multiallelic variants, BED cannot represent them as faithfully as PGEN; BED export may therefore require additional handling for datasets containing true multiallelic records.
 
 ### 11. Reports and delivery
 
@@ -539,7 +543,7 @@ The table below groups the principal rules by purpose. Optional rules run only w
 | Harmonization | `update_pgen_id` | Update variant identifiers to the harmonized representation. |
 | Harmonization | `update_pgen_alleles` | Align allele representation with harmonized identifiers. |
 | PGEN merge | `merge_qc_harmonised_pgen` | Merge final chromosome-specific PGEN files. |
-| BED conversion | `pgen2bed` | Convert harmonized PGEN data to BED format. |
+| BED conversion | `pgen2bed` | Optionally convert harmonized PGEN data to hard-called BED format using `--hard-call-threshold 0.49999999`. |
 | BED merge | `merge_qc_harmonised_bed` | Merge chromosome-specific BED files. |
 | Reporting | `generate_chromosome_summary_report` | Generate filtering summaries in text and tabular formats. |
 | Reporting | `generate_harmonization_summary_report` | Generate the combined harmonization report. |
@@ -556,9 +560,8 @@ Development and implementation were carried out by:
 - Claudia Teresa Maria Giambartolomei;
 - Giulia Pontali.
 
-Contributions, bug reports, and improvement proposals can be submitted through the repository's [GitHub Issues](https://github.com/ht-diva/genomics_QC_pipeline/issues).
+Contributions, bug reports, and improvement proposals can be submitted through the repository's [GitHub Issues](https://github.com/ht-diva/imputed_genotype_QC_pipe/issues).
 
 ## Citation
 
 If you use this workflow, cite the repository and record the exact commit or release used for the analysis. The output traceability file should be retained with the final results.
-
