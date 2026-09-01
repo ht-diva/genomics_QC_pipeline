@@ -47,7 +47,7 @@ rule update_pgen_id:
     log:
         ws_path(UPDATE_PGEN_ID_PREFIX + ".log"),
     container:
-        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
+        "docker://quay.io/biocontainers/plink2:2.0.0a.6.9--h9948957_0"
     resources:
         runtime=lambda wc, attempt: attempt * 60,
     params:
@@ -85,7 +85,7 @@ rule update_pgen_alleles:
     log:
         ws_path(UPDATE_PGEN_ALELLES_PREFIX + ".log"),
     container:
-        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
+        "docker://quay.io/biocontainers/plink2:2.0.0a.6.9--h9948957_0"
     resources:
         runtime=lambda wc, attempt: attempt * 60,
     params:

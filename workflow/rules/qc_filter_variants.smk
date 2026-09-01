@@ -40,7 +40,7 @@ rule filter_mirror_snps:
         pvar=ws_path(MIRROR_SNPS_PREFIX + ".pvar"),
         psam=ws_path(MIRROR_SNPS_PREFIX + ".psam"),
     container:
-        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
+        "docker://quay.io/biocontainers/plink2:2.0.0a.6.9--h9948957_0"
     resources:
         runtime=lambda wc, attempt: attempt * 60,
     params:
@@ -70,7 +70,7 @@ rule filter_problematic_snps:
         pvar=ws_path(PROBLEMATIC_SNPS_PREFIX + ".pvar"),
         psam=ws_path(PROBLEMATIC_SNPS_PREFIX + ".psam"),
     container:
-        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
+        "docker://quay.io/biocontainers/plink2:2.0.0a.6.9--h9948957_0"
     resources:
         runtime=lambda wc, attempt: attempt * 60,
     params:
@@ -126,7 +126,7 @@ rule filter_var:
         psam=ws_path(FILTER_VAR_PREFIX + ".psam"),
 
     container:
-        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
+        "ddocker://quay.io/biocontainers/plink2:2.0.0a.6.9--h9948957_0"
 
     resources:
         runtime=lambda wc, attempt: attempt * 60,

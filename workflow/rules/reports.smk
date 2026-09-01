@@ -411,7 +411,7 @@ rule generate_stage_qc_plink_metrics:
             )
         ),
     container:
-        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
+        "docker://quay.io/biocontainers/plink2:2.0.0a.6.9--h9948957_0"
     resources:
         runtime=lambda wildcards, attempt: attempt * 60,
     params:

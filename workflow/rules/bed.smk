@@ -9,7 +9,7 @@ rule pgen2bed:
         bim=ws_path(PGEN2BED_PREFIX + ".bim"),
         fam=ws_path(PGEN2BED_PREFIX + ".fam"),
     container:
-        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
+        "docker://quay.io/biocontainers/plink2:2.0.0a.6.9--h9948957_0"
     resources:
         runtime=lambda wc, attempt: attempt * 60,
     params:
@@ -40,7 +40,7 @@ rule merge_qc_harmonised_bed:
         fam=ws_path(MERGE_QC_HARMONISED_BED_PREFIX + ".fam"),
         file_list=ws_path("bed/qc_harmonised/merge_list_new_id_alleles.txt"),
     container:
-        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
+        "docker://quay.io/biocontainers/plink2:2.0.0a.6.9--h9948957_0"
     resources:
         runtime=lambda wc, attempt: attempt * 60,
     params:

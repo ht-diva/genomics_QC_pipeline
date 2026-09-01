@@ -13,7 +13,7 @@ rule merge_qc_harmonised_pgen:
         psam=ws_path(MERGE_NEW_ID_ALLELES_PREFIX + ".psam"),
         file_list=ws_path("pgen/qc_harmonised/merge_list_qced_harmonized.txt"),
     container:
-        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
+        "docker://quay.io/biocontainers/plink2:2.0.0a.6.9--h9948957_0"
     resources:
         runtime=lambda wc, attempt: attempt * 60,
     params:
@@ -43,7 +43,7 @@ rule freq_qc_harmonised_pgen:
         afreq=ws_path(FREQ_NEW_ID_ALLELES_PREFIX + ".afreq"),
         log=ws_path(FREQ_NEW_ID_ALLELES_PREFIX + ".log"),
     container:
-        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
+        "docker://quay.io/biocontainers/plink2:2.0.0a.6.9--h9948957_0"
     resources:
         runtime=lambda wc, attempt: attempt * 60,
     params:

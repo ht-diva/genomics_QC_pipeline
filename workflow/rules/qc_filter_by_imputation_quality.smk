@@ -14,7 +14,7 @@ rule create_bgen:
         bgen=ws_path(CREATE_BGEN_PREFIX + ".bgen"),
         sample=ws_path(CREATE_BGEN_PREFIX + ".sample"),
     container:
-        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
+        "docker://quay.io/biocontainers/plink2:2.0.0a.6.9--h9948957_0"
     resources:
         runtime=lambda wc, attempt: attempt * 60,
     params:
@@ -92,7 +92,7 @@ rule filter_hq_variants:
         pvar=ws_path(FILTER_HG_VARIANTS_PREFIX + ".pvar"),
         psam=ws_path(FILTER_HG_VARIANTS_PREFIX + ".psam"),
     container:
-        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
+        "docker://quay.io/biocontainers/plink2:2.0.0a.6.9--h9948957_0"
     resources:
         runtime=lambda wc, attempt: attempt * 60,
     params:
@@ -126,7 +126,7 @@ rule merge_filter_hq_variants:
         psam=ws_path(MERGE_FILTER_HG_VARIANTS_PREFIX + ".psam"),
         file_list=ws_path("pgen/qc/merge_list.txt"),
     container:
-        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
+        "docker://quay.io/biocontainers/plink2:2.0.0a.6.9--h9948957_0"
     resources:
         runtime=lambda wc, attempt: attempt * 60,
     params:
@@ -163,7 +163,7 @@ rule filter_by_minimac3:
         pvar=ws_path(FILTER_BY_MINIMAC3_PREFIX + ".pvar"),
         psam=ws_path(FILTER_BY_MINIMAC3_PREFIX + ".psam"),
     container:
-        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
+        "docker://quay.io/biocontainers/plink2:2.0.0a.6.9--h9948957_0"
     resources:
         runtime=lambda wc, attempt: attempt * 60,
     params:

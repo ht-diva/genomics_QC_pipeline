@@ -20,7 +20,7 @@ rule validate_imputed_input:
             ws_path(VALIDATE_INPUT_PREFIX + ".ok")
         ),
     container:
-        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
+        "docker://quay.io/biocontainers/plink2:2.0.0a.6.9--h9948957_0"
     threads:
         8
     resources:

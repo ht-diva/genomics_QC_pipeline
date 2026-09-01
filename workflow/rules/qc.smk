@@ -10,7 +10,7 @@ rule recode_pgen:
         pvar=ws_path(RECODE_PREFIX + ".pvar"),
         psam=ws_path(RECODE_PREFIX + ".psam"),
     container:
-        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
+        "docker://quay.io/biocontainers/plink2:2.0.0a.6.9--h9948957_0"
     resources:
         runtime=lambda wc, attempt: attempt * 60,
     params:
@@ -56,7 +56,7 @@ rule select_samples:
         pvar=ws_path(SELECT_PREFIX + ".pvar"),
         psam=ws_path(SELECT_PREFIX + ".psam"),
     container:
-        "docker://quay.io/biocontainers/plink2:2.00a5--h4ac6f70_0"
+        "docker://quay.io/biocontainers/plink2:2.0.0a.6.9--h9948957_0"
     resources:
         runtime=lambda wc, attempt: attempt * 60,
     params:
