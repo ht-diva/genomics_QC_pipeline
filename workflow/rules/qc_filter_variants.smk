@@ -126,7 +126,7 @@ rule filter_var:
         psam=ws_path(FILTER_VAR_PREFIX + ".psam"),
 
     container:
-        "ddocker://quay.io/biocontainers/plink2:2.0.0a.6.9--h9948957_0"
+        "docker://quay.io/biocontainers/plink2:2.0.0a.6.9--h9948957_0"
 
     resources:
         runtime=lambda wc, attempt: attempt * 60,
