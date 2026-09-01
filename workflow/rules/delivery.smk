@@ -1,16 +1,3 @@
-rule sync_header_info:
-    input:
-        rules.header_info.output,
-    output:
-        touch(dest_path("pgen/.header_info_{chrom}.done")),
-    resources:
-        runtime=lambda wc, attempt: attempt * 30,
-    params:
-        folder=dest_path("pgen/"),
-    shell:
-        """rsync -rlptoDvz --chmod "D755,F644" {input} {params.folder}"""
-
-
 rule sync_pfiles_qc_harmonised_c:
     input:
         pgen_c=rules.update_pgen_alleles.output.pgen,
