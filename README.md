@@ -13,7 +13,7 @@ and generates QC reports.
 
 ## Main features
 
-- **Early input validation**: checks PGEN integrity, chromosome labels, variant presence, dosage availability, and dosage missingness before downstream processing.
+- **Early input validation**: checks PGEN integrity, chromosome labels, variant presence, dosage availability, dosage missingness, and—when MINIMAC3 filtering is selected—the presence of explicitly phased dosages before downstream processing.
 - **Autosome-only, chromosome-aware processing**: processes one dosage-containing PGEN/PVAR/PSAM trio per autosome (chromosomes 1–22) and prevents files assigned to the wrong chromosome from entering the workflow.
 - **Sample selection**: supports PLINK 2 `--keep`, `--keep-fam`, `--remove`, and `--remove-fam` strategies.
 - **Variant identifier standardization**: converts variant identifiers to a consistent `CHR:POS:REF:ALT` representation.
@@ -75,7 +75,10 @@ Before starting the full QC workflow, each chromosome is validated. A valid inpu
 4. Chromosome labels in the PVAR file must match the chromosome being processed.
 5. Labels such as `1`, `chr1`, `CHR1`, and `Chr1` are treated equivalently.
 6. Dosage information must be present in the PGEN file.
-7. Dosage missingness must not exceed the configured maximum.
+7. When `filter_by_imputation_quality: "minimac3"`, PLINK 2 `--pgen-info` must report `Explicitly phased dosages present`.
+8. Dosage missingness must not exceed the configured maximum.
+
+The explicitly phased-dosage check is specific to the MINIMAC3 strategy. It is recorded as `NOT REQUIRED` and skipped when `filter_by_imputation_quality` is set to `info_score` or `none`; all other input-validation checks still run.
 
 The validation creates a chromosome-specific `.ok` marker only after all checks pass. Downstream rules depend on these markers, so invalid inputs stop the pipeline before any QC transformation is performed.
 
@@ -161,7 +164,6 @@ run:
   filter_by_imputation_quality: "minimac3"
 
 input_validation:
-  autosomes_only: true
   max_missing_dosage_rate: 0.0
 
 workspace_path: "results"
@@ -197,7 +199,6 @@ INFO_score: "0.7"
 
 | Option | Example | Description |
 | --- | ---: | --- |
-| `autosomes_only` | `true` | Requires chromosome-specific inputs for autosomes 1–22 and verifies that every PVAR record matches the expected chromosome. This pipeline is designed for autosomal data only. |
 | `max_missing_dosage_rate` | `0.0` | Maximum permitted dosage missingness. `0.0` requires complete dosage data. |
 
 ### Sample-selection options
@@ -225,8 +226,8 @@ The threshold must be selected for the study design and sample size; the example
 
 The workflow supports three values for `filter_by_imputation_quality`:
 
-- `info_score`: generates BGEN data, computes qctool SNP statistics, selects variants meeting `INFO_score`, and extracts them from the chromosome-specific PGEN files;
-- `minimac3`: applies the configured `minimac3-r2-filter` threshold;
+- `info_score`: generates BGEN data, computes qctool SNP statistics, selects variants meeting `INFO_score`, and extracts them from the chromosome-specific PGEN files. Explicitly phased dosages are not required by the pipeline validation for this strategy;
+- `minimac3`: first requires `plink2 --pgen-info` to report `Explicitly phased dosages present`, then applies the configured `minimac3-r2-filter` threshold;
 - `none`: skips imputation-quality filtering and passes the preceding QC dataset to harmonization.
 
 ## Running the pipeline
@@ -298,11 +299,13 @@ For every chromosome, `validate_imputed_input`:
 - requires the expected chromosome to be an autosome (1–22);
 - verifies that the PVAR chromosome matches the chromosome wildcard;
 - confirms that dosages are present;
+- conditionally requires explicitly phased dosages when `filter_by_imputation_quality` is set to `minimac3`;
+- records the explicitly phased-dosage check as `NOT REQUIRED` for the `info_score` and `none` strategies;
 - calculates dosage genotyping rate and derives dosage missingness;
 - compares dosage missingness with `max_missing_dosage_rate`;
 - creates `{chrom}_imputed_input.ok` only when every check passes.
 
-The validation outputs make it possible to distinguish PGEN corruption, chromosome-label problems, absent dosages, and excessive dosage missingness.
+The validation outputs make it possible to distinguish PGEN corruption, chromosome-label problems, absent dosages, missing explicitly phased dosages for MINIMAC3 filtering, and excessive dosage missingness.
 
 ### 2. Variant-list preparation and input summaries
 
@@ -376,10 +379,6 @@ results/
 │   ├── filtering/
 │   ├── qc/
 │   ├── qc_harmonised/
-│   ├── merge_rsids.txt
-│   ├── recode_rsids.txt
-│   ├── pseudo_biallelic_var.txt
-│   └── pseudo_biallelic.txt
 ├── bed/
 │   └── qc_harmonised/
 ├── reports/
@@ -394,8 +393,8 @@ results/
 
 | File | Meaning |
 | --- | --- |
-| `*.validate.log` | PLINK 2 PGEN validation output plus chromosome-validation status. |
-| `*.pgen_info.txt` | PGEN metadata used to confirm dosage presence. |
+| `*.validate.log` | PLINK 2 PGEN validation output plus chromosome-validation status, including the conditional MINIMAC3 explicitly phased-dosage check. |
+| `*.pgen_info.txt` | PGEN metadata used to confirm dosage presence and, for MINIMAC3 filtering, explicitly phased dosages. |
 | `*.dosage_missingness.log` | Dosage genotyping-rate output, calculated missingness, configured threshold, and PASS/FAIL status. |
 | `*.ok` | Completion marker created only after all input checks pass. |
 
@@ -524,7 +523,7 @@ The table below groups the principal rules by purpose. Optional rules run only w
 
 | Stage | Rule | Purpose |
 | --- | --- | --- |
-| Input validation | `validate_imputed_input` | Validate PGEN integrity, chromosome labels, variant presence, dosage availability, and dosage missingness. |
+| Input validation | `validate_imputed_input` | Validate PGEN integrity, chromosome labels, variant presence, dosage availability, conditional MINIMAC3 explicitly phased dosages, and dosage missingness. |
 | Input preparation | `list_rs` | Combine PVAR records and generate variant-ID mapping lists. |
 | Input reporting | `header_info` | Generate basic information for each original chromosome dataset. |
 | ID standardization | `recode_pgen` | Replace input variant IDs with standardized coordinate-and-allele IDs. |
