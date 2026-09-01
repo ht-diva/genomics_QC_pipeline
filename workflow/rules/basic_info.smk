@@ -1,5 +1,6 @@
 VALIDATE_INPUT_PREFIX = "pgen/validation/{chrom}_imputed_input"
 
+
 rule validate_imputed_input:
     input:
         pgen=get_pgen(),
@@ -37,12 +38,18 @@ rule validate_imputed_input:
         ).get(
             "max_missing_dosage_rate", 0.0
         ),
+        filter_by_imputation_quality=str(
+            config.get("run", {}).get(
+                "filter_by_imputation_quality",
+                "none",
+            )
+        ).lower(),
     shell:
         r"""
         set -euo pipefail
 
         # Create the output directory if it does not exist
-        mkdir -p "$(dirname {output.validate_log})"
+        mkdir -p "$(dirname "{output.validate_log}")"
 
         echo "Validating chromosome {wildcards.chrom}..."
 
@@ -50,20 +57,20 @@ rule validate_imputed_input:
         # 1. Validate PGEN integrity
         # ---------------------------------------------------------
         plink2 \
-            --pfile {params.pfile} \
+            --pfile "{params.pfile}" \
             --validate \
-            --out {params.validate_prefix} \
+            --out "{params.validate_prefix}" \
             --memory 3000 \
             --threads {threads}
 
         echo "PGEN integrity validation: PASS" \
-            >> {output.validate_log}
-            
+            >> "{output.validate_log}"
+
         # ---------------------------------------------------------
         # 2. Check that the PVAR contains at least one variant
         # ---------------------------------------------------------
         n_variants=$(
-            grep -vcE '^(#|[[:space:]]*$)' {input.pvar} \
+            grep -vcE '^(#|[[:space:]]*$)' "{input.pvar}" \
             || true
         )
 
@@ -73,10 +80,10 @@ rule validate_imputed_input:
         fi
 
         echo "Number of variants: $n_variants" \
-            >> {output.validate_log}
+            >> "{output.validate_log}"
 
         echo "PVAR non-empty validation: PASS" \
-            >> {output.validate_log}
+            >> "{output.validate_log}"
 
         # ---------------------------------------------------------
         # 3. Validate autosomal chromosome labels
@@ -99,7 +106,7 @@ rule validate_imputed_input:
 
         # Find the first PVAR chromosome that does not match
         unexpected_chr=$(
-            grep -vE '^(#|[[:space:]]*$)' {input.pvar} \
+            grep -vE '^(#|[[:space:]]*$)' "{input.pvar}" \
             | cut -f1 \
             | tr '[:upper:]' '[:lower:]' \
             | sed 's/^chr//' \
@@ -114,55 +121,75 @@ rule validate_imputed_input:
         fi
 
         echo "Autosomal chromosome validation: PASS" \
-            >> {output.validate_log}
-
-
+            >> "{output.validate_log}"
 
         # ---------------------------------------------------------
         # 4. Check that dosage information exists
         # ---------------------------------------------------------
         plink2 \
-            --pfile {params.pfile} \
+            --pfile "{params.pfile}" \
             --pgen-info \
             --memory 3000 \
             --threads {threads} \
-            > {output.pgen_info} 2>&1
+            > "{output.pgen_info}" 2>&1
 
-        if grep -qi \
+        if grep -Fqi \
             "No dosages present" \
-            {output.pgen_info}
+            "{output.pgen_info}"
         then
             echo "ERROR: chromosome {wildcards.chrom}: no dosage information found." >&2
-            cat {output.pgen_info} >&2
+            cat "{output.pgen_info}" >&2
             exit 1
         fi
 
         if ! grep -Eqi \
             "dosages present" \
-            {output.pgen_info}
+            "{output.pgen_info}"
         then
             echo "ERROR: chromosome {wildcards.chrom}: could not confirm dosage information." >&2
-            cat {output.pgen_info} >&2
+            cat "{output.pgen_info}" >&2
             exit 1
         fi
 
         echo "Dosage information validation: PASS" \
-            >> {output.validate_log}
+            >> "{output.validate_log}"
 
         # ---------------------------------------------------------
-        # 5. Check dosage missingness
+        # 5. Check explicitly phased dosages for MINIMAC3 filtering
+        # ---------------------------------------------------------
+        if [ "{params.filter_by_imputation_quality}" = "minimac3" ]; then
+            if ! grep -Fqi \
+                "Explicitly phased dosages present" \
+                "{output.pgen_info}"
+            then
+                echo "ERROR: chromosome {wildcards.chrom}: MINIMAC3 filtering requires explicitly phased dosages." >&2
+                echo "Expected PLINK --pgen-info to report:" >&2
+                echo "  Explicitly phased dosages present" >&2
+                cat "{output.pgen_info}" >&2
+                exit 1
+            fi
+
+            echo "MINIMAC3 explicitly phased dosage validation: PASS" \
+                >> "{output.validate_log}"
+        else
+            echo "MINIMAC3 explicitly phased dosage validation: NOT REQUIRED" \
+                >> "{output.validate_log}"
+        fi
+
+        # ---------------------------------------------------------
+        # 6. Check dosage missingness
         # ---------------------------------------------------------
         plink2 \
-            --pfile {params.pfile} \
+            --pfile "{params.pfile}" \
             --genotyping-rate dosage \
-            --out {params.dosage_prefix} \
+            --out "{params.dosage_prefix}" \
             --memory 3000 \
             --threads {threads}
 
         rate=$(
             grep -Eio \
                 'genotyping rate is (exactly )?[0-9.eE+-]+' \
-                {output.dosage_log} \
+                "{output.dosage_log}" \
             | tail -n 1 \
             | awk '{{print $NF}}' \
             || true
@@ -170,7 +197,7 @@ rule validate_imputed_input:
 
         if [ -z "$rate" ]; then
             echo "ERROR: chromosome {wildcards.chrom}: unable to parse dosage genotyping rate." >&2
-            cat {output.dosage_log} >&2
+            cat "{output.dosage_log}" >&2
             exit 1
         fi
 
@@ -179,26 +206,26 @@ rule validate_imputed_input:
                 'BEGIN {{printf "%.10f", 1-r}}'
         )
 
-        echo "" >> {output.dosage_log}
+        echo "" >> "{output.dosage_log}"
         echo "Dosage missingness: $missing_rate" \
-            >> {output.dosage_log}
+            >> "{output.dosage_log}"
         echo "Maximum allowed:    {params.max_missing_dosage_rate}" \
-            >> {output.dosage_log}
+            >> "{output.dosage_log}"
 
         if ! awk \
             -v missing="$missing_rate" \
             -v max="{params.max_missing_dosage_rate}" \
             'BEGIN {{exit !(missing <= max)}}'
         then
-            echo "FAIL" >> {output.dosage_log}
+            echo "FAIL" >> "{output.dosage_log}"
             echo "ERROR: chromosome {wildcards.chrom}: dosage missingness exceeds allowed threshold." >&2
             exit 1
         fi
 
-        echo "PASS" >> {output.dosage_log}
+        echo "PASS" >> "{output.dosage_log}"
 
         echo "Dosage missingness validation: PASS" \
-            >> {output.validate_log}
+            >> "{output.validate_log}"
 
         echo "Chromosome {wildcards.chrom}: input validation PASSED"
         """
