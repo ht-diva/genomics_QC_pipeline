@@ -126,6 +126,7 @@ rule validate_imputed_input:
         # ---------------------------------------------------------
         # 4. Check that dosage information exists
         # ---------------------------------------------------------
+
         plink2 \
             --pfile "{params.pfile}" \
             --pgen-info \
@@ -133,8 +134,8 @@ rule validate_imputed_input:
             --threads {threads} \
             > "{output.pgen_info}" 2>&1
 
-        if grep -Fqi \
-            "No dosages present" \
+        if grep -Eqi \
+            "no dosages? present" \
             "{output.pgen_info}"
         then
             echo "ERROR: chromosome {wildcards.chrom}: no dosage information found." >&2
@@ -143,7 +144,7 @@ rule validate_imputed_input:
         fi
 
         if ! grep -Eqi \
-            "dosages present" \
+            "dosages? present" \
             "{output.pgen_info}"
         then
             echo "ERROR: chromosome {wildcards.chrom}: could not confirm dosage information." >&2
@@ -153,7 +154,7 @@ rule validate_imputed_input:
 
         echo "Dosage information validation: PASS" \
             >> "{output.validate_log}"
-
+  
         # ---------------------------------------------------------
         # 5. Check explicitly phased dosages for MINIMAC3 filtering
         # ---------------------------------------------------------
