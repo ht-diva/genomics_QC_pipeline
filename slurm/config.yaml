@@ -64,7 +64,7 @@ set-resources:
       mem_mb: 2048 + attempt * 2048
       threads: *cores
     filter_hq_variants:
-      mem_mb: 1024 + attempt * 1024
+      mem_mb: 4096 + attempt * 4096
       threads: *cores
     merge_filter_hq_variants:
       mem_mb: 102400 + attempt * 2048
