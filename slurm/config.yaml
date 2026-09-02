@@ -70,10 +70,10 @@ set-resources:
       mem_mb: 102400 + attempt * 2048
       threads: *cores
     update_pgen_id:
-      mem_mb: 1024 + attempt * 1024
+      mem_mb: 4096 + attempt * 4096
       threads: *cores
     update_pgen_alleles:
-      mem_mb: 1024 + attempt * 1024
+      mem_mb: 4096 + attempt * 4096
       threads: *cores
     merge_qc_harmonised_pgen:
       mem_mb: 102400 + attempt * 2048
